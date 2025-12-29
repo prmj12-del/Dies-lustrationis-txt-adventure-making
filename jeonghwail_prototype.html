@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>정화일 (Dies lustrationis) — 프로토타입</title>
+  <style>
+    :root { --bg:#0b0c10; --panel:#12141b; --text:#e7e9f0; --muted:#a7adbd; --line:#242a3a; --accent:#7aa2ff; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+           background:var(--bg); color:var(--text); }
+    header { position:sticky; top:0; z-index:10; background:rgba(11,12,16,.92); backdrop-filter:blur(10px);
+             border-bottom:1px solid var(--line); padding:12px 14px; }
+    .row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill { border:1px solid var(--line); background:var(--panel); color:var(--muted); padding:6px 10px; border-radius:999px; font-size:13px; }
+    .pill strong { color:var(--text); font-weight:700; }
+    .wrap { max-width:920px; margin:0 auto; padding:14px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+    #text { white-space:pre-wrap; line-height:1.65; font-size:16px; }
+    #title { font-size:13px; color:var(--muted); margin:0 0 8px 0; }
+    .choices { display:grid; gap:10px; margin-top:14px; }
+    button { appearance:none; border:1px solid var(--line); background:#0f1220; color:var(--text);
+             padding:12px; border-radius:12px; text-align:left; font-size:15px; line-height:1.35; cursor:pointer; }
+    button:hover { border-color:rgba(122,162,255,.6); }
+    button:active { transform:translateY(1px); }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .small { font-size:13px; color:var(--muted); }
+    .ghost { opacity:.85; }
+    dialog { border:1px solid var(--line); border-radius:14px; background:var(--panel); color:var(--text); max-width:920px; width:calc(100% - 20px); }
+    dialog::backdrop { background:rgba(0,0,0,.55); }
+    dialog h3 { margin:0 0 8px 0; }
+    dialog .content { white-space:pre-wrap; line-height:1.6; }
+    dialog .footer { margin-top:12px; display:flex; gap:10px; justify-content:flex-end; }
+    .btn { background:#0f1220; }
+    .btn.primary { border-color:rgba(122,162,255,.65); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="row">
+        <div class="pill">이름: <strong id="statName">—</strong></div>
+        <div class="pill">체력: <strong id="statHP">3</strong></div>
+        <div class="pill">허기: <strong id="statHunger">3</strong></div>
+        <div class="pill">돈: <strong id="statMoney">0</strong></div>
+        <div class="pill">MAM: <strong id="statMAM">없음</strong></div>
+        <div class="pill">수첩: <strong id="statNotebook">없음</strong></div>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="card">
+      <div id="title"></div>
+      <div id="text"></div>
+      <div class="choices" id="choices"></div>
+
+      <div class="toolbar">
+        <button class="btn" id="btnNotebook">수첩</button>
+        <button class="btn" id="btnSave">저장</button>
+        <button class="btn" id="btnLoad">불러오기</button>
+        <button class="btn" id="btnReset">초기화</button>
+      </div>
+
+      <div class="small ghost" style="margin-top:10px;">
+        모바일 Safari에서 바로 실행되는 단일 HTML 프로토타입입니다. (스토리/노드/선택지 테스트용)
+      </div>
+    </div>
+  </main>
+
+  <dialog id="dlgNotebook">
+    <div class="wrap" style="padding:14px;">
+      <h3>수첩</h3>
+      <div class="content" id="notebookContent"></div>
+      <div class="footer">
+        <button class="btn primary" id="btnCloseNotebook">닫기</button>
+      </div>
+    </div>
+  </dialog>
+
+<script>
+const state = {
+  nodeId: "PROLOGUE",
+  playerName: null,
+  hp: 3,
+  hunger: 3,
+  money: 0,
+  mam: { level: 0, label: "없음" },
+  inventory: [],
+  notebookEntries: [],
+  flags: { hasNotebook: false, signedLustra: false }
+};
+
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+function addItem(name){ if (!state.inventory.includes(name)) state.inventory.push(name); }
+function addNotebookEntry(title, body){
+  state.notebookEntries.push({ title, body, at: new Date().toISOString() });
+  state.flags.hasNotebook = true;
+  addItem("수첩");
+}
+function updateStats(){
+  document.getElementById("statName").textContent = state.playerName ?? "—";
+  document.getElementById("statHP").textContent = state.hp;
+  document.getElementById("statHunger").textContent = state.hunger;
+  document.getElementById("statMoney").textContent = state.money;
+  document.getElementById("statMAM").textContent = state.mam.label;
+  document.getElementById("statNotebook").textContent = state.flags.hasNotebook ? "있음" : "없음";
+}
+function saveGame(){
+  localStorage.setItem("dies_lustrationis_save_v1", JSON.stringify(state));
+  toast("저장했습니다.");
+}
+function loadGame(){
+  const raw = localStorage.getItem("dies_lustrationis_save_v1");
+  if(!raw) return toast("저장 데이터가 없습니다.");
+  const data = JSON.parse(raw);
+  Object.assign(state, data);
+  toast("불러왔습니다.");
+  render();
+}
+function resetGame(){
+  localStorage.removeItem("dies_lustrationis_save_v1");
+  location.reload();
+}
+
+const NODES = {
+  PROLOGUE: {
+    title: "프롤로그",
+    text:
+`장대와도 같은 비가 검은 하늘 아래로 쏟아져 내린다.
+잿빛의 하늘, 끊기지 않는 총성과도 같은 빗소리가 고막을 두들긴다.
+
+이 비는 기억을 지운다.
+
+당신은 이 폭우 속에서 기억이 지워져내렸다.
+목에 걸린 1등급 기억보존 장치가 기긱거리는 소음을 내며 작동한다.
+깨져있는 모습을 보아하니, 작동하는 것만으로도 감사할 지경이다.
+
+언어. 사회규범. 숨 쉬는 법. 걷는 법. 인사하는 법.
+그 외의 것은… 없다.
+
+저 멀리서 경비 드론이 당신을 발견하고 다가온다.
+
+드론 : 현재 정화작업으로, 인공강우가 내리고 있습니다.
+시민 여러분께서는 즉시 귀가하시기 바랍니다.
+불응할 시, 귀하의 1등급 기억 보존 장치를 제시하여 신분을 증명해주시기 바랍니다.`,
+    choices: [
+      { label: "ㅇ 기억보존장치를 제시한다.", to: "A_SCAN" },
+      { label: "ㅇ 도망친다.", to: "B_RUN_START" }
+    ]
+  },
+
+  A_SCAN: {
+    title: "정화일 A루트",
+    text:
+`당신은 드론의 스캐너 앞에 착용하고 있던 기억보존장치를 제시한다.
+강렬한 스캔 레이저가 눈앞을 스쳐 지나간다.
+
+드론 : 스캔이 완료되었으나, 오류로 인하여 등록정보를 확인할 수 없었습니다.
+소지하고 계신 기억보존장치는 본인 소유의 물건이 맞으십니까?
+
+…선택지는 없다는 걸 직감한다.
+
+드론 : 주민 재심사장으로 이동하여 재등록하실 것을 권장드립니다. 동의하십니까?`,
+    choices: [
+      { label: "ㅇ (고개를 끄덕인다.)", to: "A_RESCREEN_NOTEBOOK" }
+    ]
+  },
+
+  A_RESCREEN_NOTEBOOK: {
+    title: "주민등록 재심사장",
+    text:
+`드론을 따라 도착한 곳은 주민등록 재심사장이었다.
+
+[테스트용]
+아래 버튼을 누르면 서명(이름 입력) → MAM(1층) 지급 → 수첩 획득이 진행됩니다.
+
+※ 원하면, 여기 텍스트를 'A루트 클린업 본문'으로 통째로 교체하면 됩니다.`,
+    choices: [
+      {
+        label: "ㅇ 서명한다. (이름 입력)",
+        action: () => {
+          const name = prompt("이름을 입력하세요", state.playerName ?? "");
+          if (name && name.trim().length > 0) state.playerName = name.trim();
+          else state.playerName = state.playerName ?? "—";
+          state.mam.level = 1;
+          state.mam.label = "1층(기초) — 무상";
+          state.flags.signedLustra = true;
+
+          addNotebookEntry(
+            "입교(임시) 기록",
+            "수첩 첫 페이지에는 정갈하게 인쇄된 활자가 적혀 있다.\n\n“망각은 순수로의 첫 걸음이다.”\n(루스트라 기억구제국 배포용)"
+          );
+
+          toast("수첩을 획득했습니다.");
+          render();
+        },
+        to: "A_AFTER"
+      }
+    ]
+  },
+
+  A_AFTER: {
+    title: "재심사장 밖",
+    text:
+`당신은 이름을 얻었다.
+그리고 무엇인가를 잃었다는 기분이 든다.
+
+…하지만 그 실수가 어떤 종류인지조차 모른다.
+
+(다음: A루트 메인 노드로 이어붙이기)`,
+    choices: [
+      { label: "ㅇ (테스트 종료) 처음으로", to: "PROLOGUE" }
+    ]
+  },
+
+  B_RUN_START: {
+    title: "정화일 B루트",
+    text:
+`당신은 드론의 요구에 응하는 것보다도 본능적인 공포에 몸을 맡겨, 즉시 뒤로 돌아 달음박질했다.
+
+드론 : 검문에 응하지 않을 시, 제압탄 사격이 허용됩니다. 5초 내로 돌아오시기를 권장드립니다.
+…3초 내로 돌아오지 않을 시 시민의 안전을 위해 제압탄 사격이 허용됩니다.
+
+무작정 앞으로, 앞으로.
+폐부가 찢겨나가는 고통 속에서도 당신은 달린다.
+
+드론 : 2… 1.. 제압탄을 사용합니다.
+
+텅.
+
+당신의 시선은 도시 끝에서 지면을 향한다.
+허리에서 강렬한 통증이 느껴진다.
+지면에 고여가는 물과 함께, 기억이 흐릿해져간다. 도망쳐야하는 이유는…?
+`,
+    choices: [
+      { label: "ㅇ 고통을 짓이기고 도망친다. (체력-2)", to: "B_ESCAPE", action: () => state.hp = clamp(state.hp - 2, 0, 9) },
+      { label: "ㅇ 정신을 잃는다. (체력-1)", to: "B_FAINT", action: () => state.hp = clamp(state.hp - 1, 0, 9) }
+    ]
+  },
+
+  B_ESCAPE: {
+    title: "도주",
+    text:
+`이유는 몰라도 당신은 지친 몸을 억지로 끌어당겨 일어난다.
+드론이 가까워진다.
+
+탕!
+드론 : 실탄의 사용이 승인되었습니다.
+
+철창을 넘어선 곳은 가파른 경사로 이루어진 동굴이었다.
+당신은 구르고, 굴러 떨어진다.
+허벅지에 불이 붙은 것 같은 통증—총상이다.
+
+하지만 당신은 살아남았다.`,
+    choices: [
+      { label: "ㅇ (카타콤으로) 계속", to: "B_CATACOMB_PLACEHOLDER" }
+    ]
+  },
+
+  B_FAINT: {
+    title: "기절",
+    text:
+`당신은 실존할지도 모르는 ‘기절할 권리’를 마음속으로 주장하며 정신을 놓아버린다.
+
+땅바닥이 차갑고,
+당신을 이끄는 누군가의 팔은 더 차갑다.
+
+(당신은 깨어나게 될 것이다.)`,
+    choices: [
+      { label: "ㅇ (카타콤으로) 계속", to: "B_CATACOMB_PLACEHOLDER" }
+    ]
+  },
+
+  B_CATACOMB_PLACEHOLDER: {
+    title: "카타콤(플레이스홀더)",
+    text:
+`여기는 카타콤(지하)입니다.
+
+TODO:
+- 애드리언이 작성 중인 'B루트 수첩 획득 이벤트2' 텍스트를 이 노드에 붙여넣고,
+- 아래 선택지에서 수첩 획득/이름 입력(수첩 표지) 로직을 연결하면 됩니다.`,
+    choices: [
+      {
+        label: "ㅇ (테스트) 수첩 획득 + 수첩 표지에 이름 적기",
+        action: () => {
+          const name = prompt("수첩 표지 안쪽에 적을 이름을 입력하세요", state.playerName ?? "");
+          if (name && name.trim().length) state.playerName = name.trim();
+          addNotebookEntry("수첩(카타콤) — 첫 기록", "수첩 표지 안쪽, 주인의 이름 칸이 비어 있다.\n\n…당신은 조용히 적는다.");
+          toast("수첩을 획득했습니다.");
+          render();
+        },
+        to: "B_AFTER"
+      },
+      { label: "ㅇ 처음으로", to: "PROLOGUE" }
+    ]
+  },
+
+  B_AFTER: {
+    title: "카타콤 이후",
+    text:
+`수첩이 손에 있다.
+이름이 종이 위에 있다.
+
+…하지만 그게 곧 ‘기억’은 아니다.`,
+    choices: [
+      { label: "ㅇ 처음으로", to: "PROLOGUE" }
+    ]
+  }
+};
+
+function render(){
+  updateStats();
+  const node = NODES[state.nodeId];
+  document.getElementById("title").textContent = node.title ?? "";
+  document.getElementById("text").textContent = node.text ?? "";
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  (node.choices ?? []).forEach((c) => {
+    const btn = document.createElement("button");
+    btn.textContent = c.label;
+    btn.addEventListener("click", () => {
+      try { if (typeof c.action === "function") c.action(); }
+      catch(e){ console.error(e); toast("오류: " + e.message); }
+      if (c.to) { state.nodeId = c.to; render(); }
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+
+const dlgNotebook = document.getElementById("dlgNotebook");
+document.getElementById("btnNotebook").addEventListener("click", () => {
+  const content = document.getElementById("notebookContent");
+  if(!state.flags.hasNotebook || state.notebookEntries.length === 0){
+    content.textContent = "아직 기록이 없습니다.";
+  } else {
+    const lines = [];
+    state.notebookEntries.forEach((e, idx) => {
+      const when = new Date(e.at).toLocaleString();
+      lines.push(`(${idx+1}) ${e.title}\n${e.body}\n— ${when}\n`);
+    });
+    content.textContent = lines.join("\n");
+  }
+  dlgNotebook.showModal();
+});
+document.getElementById("btnCloseNotebook").addEventListener("click", () => dlgNotebook.close());
+
+document.getElementById("btnSave").addEventListener("click", saveGame);
+document.getElementById("btnLoad").addEventListener("click", loadGame);
+document.getElementById("btnReset").addEventListener("click", resetGame);
+
+let toastTimer = null;
+function toast(msg){
+  let el = document.getElementById("toast");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "toast";
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.bottom = "18px";
+    el.style.transform = "translateX(-50%)";
+    el.style.background = "rgba(18,20,27,.95)";
+    el.style.border = "1px solid var(--line)";
+    el.style.color = "var(--text)";
+    el.style.padding = "10px 12px";
+    el.style.borderRadius = "999px";
+    el.style.fontSize = "14px";
+    el.style.zIndex = "999";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = "1";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = "0"; }, 1400);
+}
+
+render();
+</script>
+</body>
+</html>
