@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>정화일 (Dies lustrationis) — 프로토타입</title>
+  <style>
+  :root{
+    --bg:#0b0c10;
+    --panel:#12141b;
+    --text:#e7e9f0;
+    --muted:#a7adbd;
+    --line:#242a3a;
+    --accent:#7aa2ff;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    background:rgba(11,12,16,.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+    padding:12px 14px;
+  }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .row{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .pill{
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--muted);
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:13px;
+  }
+  .pill strong{ color:var(--text); font-weight:700; }
+  .pill.countdown{
+    border-color:rgba(122,162,255,.45);
+    background:rgba(122,162,255,.14);
+    color:var(--text);
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:14px; }
+  .card{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  #text{ white-space:pre-wrap; line-height:1.65; font-size:16px; }
+  #title{ font-size:13px; color:var(--muted); margin:0 0 8px 0; }
+  .choices{ display:grid; gap:10px; margin-top:14px; }
+  button{
+    appearance:none;
+    border:1px solid var(--line);
+    background:#0f1220;
+    color:var(--text);
+    padding:12px;
+    border-radius:12px;
+    text-align:left;
+    font-size:15px;
+    line-height:1.35;
+    cursor:pointer;
+  }
+  button:hover{ border-color:rgba(122,162,255,.6); }
+  button:active{ transform:translateY(1px); }
+  .toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .small{ font-size:13px; color:var(--muted); }
+  .ghost{ opacity:.85; }
+  dialog{
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--panel);
+    color:var(--text);
+    max-width:920px;
+    width:calc(100% - 20px);
+  }
+  dialog::backdrop{ background:rgba(0,0,0,.55); }
+  dialog h3{ margin:0 0 8px 0; }
+  dialog .content{ white-space:pre-wrap; line-height:1.6; }
+  dialog .footer{ margin-top:12px; display:flex; gap:10px; justify-content:flex-end; }
+  .btn{ background:#0f1220; }
+  .btn.primary{ border-color:rgba(122,162,255,.65); }
+</style>
+</head>
+<body>
+  <header>
+  <div class="topbar">
+    <div class="row">
+      <div class="pill">이름: <strong id="statName">—</strong></div>
+      <div class="pill">Day: <strong id="statDay">0</strong></div>
+      <div class="pill">체력: <strong id="statHP">3/5</strong></div>
+      <div class="pill">허기: <strong id="statHunger">3/5</strong></div>
+      <div class="pill">식량: <strong id="statFood">0</strong></div>
+      <div class="pill">돈: <strong id="statMoney">0</strong></div>
+      <div class="pill">MAM: <strong id="statMAM">없음</strong></div>
+      <div class="pill">수첩: <strong id="statNotebook">없음</strong></div>
+    </div>
+    <div class="row">
+      <div class="pill countdown" id="statCountdown" style="display:none">다음 정화일 D-?</div>
+    </div>
+  </div>
+</header>
+
+  <main class="wrap">
+    <div class="card">
+      <div id="title"></div>
+      <div id="text"></div>
+      <div class="choices" id="choices"></div>
+
+      <div class="toolbar">
+        <button class="btn" id="btnNotebook">수첩</button>
+        <button class="btn" id="btnSave">저장</button>
+        <button class="btn" id="btnLoad">불러오기</button>
+        <button class="btn" id="btnEat">식사</button>
+        <button class="btn" id="btnRest">휴식</button>
+        <button class="btn" id="btnReset">초기화</button>
+      </div>
+
+      <div class="small ghost" style="margin-top:10px;">
+        모바일 Safari에서 바로 실행되는 단일 HTML 프로토타입입니다. (스토리/노드/선택지 테스트용)
+      </div>
+    </div>
+  </main>
+
+  <dialog id="dlgNotebook">
+    <div class="wrap" style="padding:14px;">
+      <h3>수첩</h3>
+      <div class="content" id="notebookContent"></div>
+      <div class="footer">
+        <button class="btn primary" id="btnCloseNotebook">닫기</button>
+      </div>
+    </div>
+  </dialog>
+
+<script>
+
+const state = {
+  nodeId: "PROLOGUE",
+  day: 0,
+  maxHp: 5,
+  playerName: null,
+  hp: 3,
+  hunger: 3,
+  maxHunger: 5,
+  food: 0,
+  money: 0,
+  mam: { isActive: false, level: 0, label: "없음" },
+  inventory: [],
+  notebookEntries: [],
+  flags: { hasNotebook: false, signedLustra: false }
+  ,purification: { known:false, daysRemaining:null }
+};
+
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+function addItem(name){ if (!state.inventory.includes(name)) state.inventory.push(name); }
+function addNotebookEntry(title, body){
+  state.notebookEntries.push({ title, body, at: new Date().toISOString() });
+  state.flags.hasNotebook = true;
+  addItem("수첩");
+}
+function addFood(n=1){
+  if(typeof state.food !== "number") state.food = 0;
+  state.food = Math.max(0, state.food + Number(n||0));
+}
+function eat(){
+  const maxH = Number(state.maxHunger ?? 5);
+  if((state.food ?? 0) <= 0){
+    toast("먹을 것이 없다.");
+    return;
+  }
+  state.food -= 1;
+  state.hunger = clamp(Number(state.hunger ?? 0) + 2, 0, maxH);
+  render();
+  toast("식사했다. (허기 +2)");
+}
+
+
+function ensurePurificationDefaults(){
+  if(!state.purification) state.purification = { known:false, daysRemaining:3 };
+  if(typeof state.purification.known !== "boolean") state.purification.known = false;
+  if(state.purification.daysRemaining === null) state.purification.daysRemaining = 3;
+  if(typeof state.purification.daysRemaining !== "number") state.purification.daysRemaining = 3;
+}
+function learnPurificationCountdown(days){
+  ensurePurificationDefaults();
+  state.purification.known = true;
+  state.purification.daysRemaining = clamp(Number(days ?? 0), 0, 999);
+}
+function advanceDays(n=1){
+  ensurePurificationDefaults();
+  if(typeof state.purification.daysRemaining !== "number") return;
+  state.purification.daysRemaining = Math.max(0, state.purification.daysRemaining - Math.max(0, Number(n)||0));
+}
+function updateStats(){
+  document.getElementById("statName").textContent = state.playerName ?? "—";
+  const dayEl = document.getElementById("statDay");
+  if(dayEl) dayEl.textContent = String(state.day ?? 0);
+  document.getElementById("statHP").textContent = `${state.hp}/${state.maxHp}`;
+  const maxH = Number(state.maxHunger ?? 5);
+  const h = clamp(Number(state.hunger ?? 0), 0, maxH);
+  document.getElementById("statHunger").textContent = `${h}/${maxH}`;
+  document.getElementById("statFood").textContent = Number(state.food ?? 0);
+  document.getElementById("statMoney").textContent = state.money;
+  document.getElementById("statMAM").textContent = state.mam.label;
+  document.getElementById("statNotebook").textContent = state.flags.hasNotebook ? "있음" : "없음";
+  // Countdown: shows only after player learns the schedule
+  ensurePurificationDefaults();
+  const cd = document.getElementById("statCountdown");
+  if(state.purification.known && typeof state.purification.daysRemaining === "number"){
+    cd.style.display = "";
+    cd.textContent = `다음 정화일 D-${state.purification.daysRemaining}`;
+  } else {
+    cd.style.display = "none";
+  }
+}
+function saveGame(){
+  localStorage.setItem("dies_lustrationis_save_v1", JSON.stringify(state));
+  toast("저장했습니다.");
+}
+function loadGame(){
+  const raw = localStorage.getItem("dies_lustrationis_save_v1");
+  if(!raw) return toast("저장 데이터가 없습니다.");
+  const data = JSON.parse(raw);
+  Object.assign(state, data);
+  ensurePurificationDefaults();
+  toast("불러왔습니다.");
+  ensurePurificationDefaults();
+render();
+}
+function resetGame(){
+  localStorage.removeItem("dies_lustrationis_save_v1");
+  location.reload();
+}
+
+function resetRun(){
+  // '처음으로' 버튼용: 페이지 리로드 없이 런(상태)만 초기화
+  state.nodeId = "PROLOGUE";
+  state.hp = 3;
+  state.maxHp = Number(state.maxHp ?? 5);
+  state.money = 0;
+  state.hunger = 3;
+  state.inventory = [];
+  state.mam = { isActive: false, level: 0, label: "없음" };
+  state.flags = { hasNotebook: false };
+  state.purification = { known: false, daysRemaining: 3 };
+  ensurePurificationDefaults();
+  toast("새 게임을 시작합니다.");
+  render();
+}
+
+const NODES = {
+  PROLOGUE: {
+    title: "프롤로그",
+    text:
+`장대와도 같은 비가 검은 하늘 아래로 쏟아져 내린다.
+잿빛의 하늘, 끊기지 않는 총성과도 같은 빗소리가 고막을 두들긴다.
+
+이 비는 기억을 지운다.
+
+당신은 이 폭우 속에서 기억이 지워져내렸다.
+목에 걸린 1등급 기억보존 장치가 기긱거리는 소음을 내며 작동한다.
+깨져있는 모습을 보아하니, 작동하는 것만으로도 감사할 지경이다.
+
+언어. 사회규범. 숨 쉬는 법. 걷는 법. 인사하는 법.
+그 외의 것은… 없다.
+
+저 멀리서 경비 드론이 당신을 발견하고 다가온다.
+
+드론 : 현재 정화작업으로, 인공강우가 내리고 있습니다.
+시민 여러분께서는 즉시 귀가하시기 바랍니다.
+불응할 시, 귀하의 1등급 기억 보존 장치를 제시하여 신분을 증명해주시기 바랍니다.`,
+    choices: [
+      { label: "ㅇ 기억보존장치를 제시한다.", to: "A_SCAN" },
+      { label: "ㅇ 도망친다.", to: "B_RUN_START" }
+    ]
+  },
+
+  A_SCAN: {
+    title: "정화일 A루트",
+    text:
+`당신은 드론의 스캐너 앞에 착용하고 있던 기억보존장치를 제시한다.
+강렬한 스캔 레이저가 눈앞을 스쳐 지나간다.
+
+드론 : 스캔이 완료되었으나, 오류로 인하여 등록정보를 확인할 수 없었습니다.
+소지하고 계신 기억보존장치는 본인 소유의 물건이 맞으십니까?
+
+…선택지는 없다는 걸 직감한다.
+
+드론 : 주민 재심사장으로 이동하여 재등록하실 것을 권장드립니다. 동의하십니까?`,
+    choices: [
+      { label: "ㅇ (고개를 끄덕인다.)", to: "A_RESCREEN_NOTEBOOK" }
+    ]
+  },
+
+  A_RESCREEN_NOTEBOOK: {
+    title: "주민등록 재심사장",
+    text:
+`드론을 따라 도착한 곳은 주민등록 재심사장이었다.
+폭우 속을 쉬지 않고 걸은 탓에, 온 몸은 물먹은 스펀지처럼 푹 젖어있었지만, 입 안쪽은 까끌까끌했다. 당신은 갈증을 느끼며 이 어이없는 상황에 기이함을 체험했다.
+
+비교적 밝고 깨끗한, 대리석으로 만들어진 바닥에 홀로 서 있는 자신의 몰골을 깨닫고는 조금 비참한 기분을 느꼈다.
+
+어이없게도 드론은 당신에게 사람이 인사하듯 고개를 꾸벅 숙이고는 다시 비가 내리는 바깥으로 이동했다. 당신도 뒤늦게나마 어색하게 고개를 숙였다.
+
+이곳을 찾는 사람은 많지 않았다.
+아마도, 당신처럼 어떤 이유로든간에 기억보존장치가 파손되었거나, 분실된 사람들일 것이다.
+
+카운터에 서있는 직원이 기묘하게 밝은 얼굴로 당신을 맞이하며 인사를 건넨다.
+당신은 왠지 잘못한 어린아이처럼 쭈뼛거린다.
+
+직원 : 안녕하세요, 주민등록 재심사 대상자시군요? 가지고 계신 기억보존장치를 보여주실 수 있으실까요?
+
+직원은 상냥하게 당신의 신분을 확인하려 한다.
+당신은 파손된 안쪽으로 물이 차서 찰랑거리는 소리가 나는 기억보존장치를 들어 지저분한 손으로 직원에게 건넨다.
+직원은 꺼려하는 기색 없이 당신의 장치를 들어 자세히 살펴보고는 안내한다.
+
+직원 : 아.. 이런, 기억보존장치가 파손되셨네요.. 괜찮습니다! 파손이나 분실로 찾아오시는 분들이 이렇게 종종 있으시거든요! 수첩 같은 개인 기록물을 주셔도 확인할 수 있으니 한 번 찾아보시겠어요?
+
+그제서야 당신은 개인 소지품을 통해 자신을 추측할 수 있음을 깨닫고는 주섬주섬 주머니를 뒤지기 시작한다.
+물에 젖어 엉망진창이 된 수첩 한 권이 안 주머니에서 나온다.
+
+이 수첩은 열어보지 않는 편이 좋을 듯 하다.
+
+직원 : 아.. 하하, 이거 참 곤란하게 되었네요. 괜찮습니다. 저기 옆 쪽으로 가시면 [루스트라 교단 기억 구제국] 창구가 있거든요. 관청과 협의해서 무료로 임시 기억보존장치를 대여하거나 "무상"으로 제공해드리고 있으니, 우선 임시 신분을 신고하신 후에 본래 신분으로 이전하시면 되니까요. 아무리 저렴한 기억보존장치라고 해도, 이렇게 무상으로 제공하시다니, 정말 상냥한 분들이라니까요.
+
+당신은 직원의 안내로 옆 창구의 하얀 사제복을 입고 있는 교단의 사제에게 다가간다. 곧이어 직원은 당신이 서 있던 자리로 와서 바닥에 괸 빗물을 대걸레로 훔치기 시작한다. 고요하고, 고요하다.
+
+교단의 사제는 조용히 미소를 지으며 옆자리에서 서류 한 장과 당신이 지니고 있던 것의 새 제품인듯한 기억보존장치를 꺼내어 테이블 앞에 내민다. 실로 온화한 미소이다. 종교인은 모두 이런 느낌인가? 라는 의문을 가지며 종이에 손을 내밀던 당신에게 사제는 손바닥을 내민다.
+
+사제 : 종이를 만지시기 전에 손을 닦으시지 않는다면, 이 서류를 두 번 쓰셔야 할겁니다, 형제님.
+
+사제는 가벼운 농을 던지며 테이블 아래의 서랍에서 수건을 꺼내어 건넨다.
+당신이 손에 쥔 수건에서는 희미한 온기가 느껴진다. 당신은 깊은 감사를 표하며 우선 손과 얼굴, 머리를 수건으로 닦아낸다.
+
+사제 : 종종 이런 분들이 찾아오시거든요. 자, 별거 아닌 서류니까 보고 밑에 서명만 해주시면 됩니다. 이름이 필요하거든요.
+
+당신은 스스로의 이름을 기억하지는 못하지만, 그렇다고 그것이 서명하지 못할 일은 아님은 알고 있다.
+
+사제 : 본명을 기억하지 못하신다면, 떠오르는 이름을 적으셔도 괜찮습니다.
+
+잠시 사제는 뜸을 들이고는 알 수 없는 미소를 지으며 당신의 시선을 끌어당긴다. 아주 잠깐의 적막 속에서 당신은 옷에서 떨어지는 빗물의 소리를 들었다.
+
+사제 : 그 "이름"이 당신을 의미하도록 만들면 되니까요.
+
+— — —
+
+무상 MAM 복지 수혜 및 기억 구제 지원 동의서 (요약본)
+
+문서번호: LV-SS--
+발급기관: 루스트라 신앙 산하 기억구제국 / 도시행정청 협력기관
+
+<핵심 지원 안내>
+▶기억보존장치 Memory Authentication Module(이하 MAM)의 기초 기능 무상지원(임시)
+▶정화일 규범 준수 의무
+▶월 소득 10% 이상 구제 분담금 납부 의무
+
+…(중략)…
+
+서류 맨 하단에는 아주 작은 글씨가 적혀있었다.
+눈을 찌푸리고 얼굴을 가까이 하여 읽어보니, 경고 문구가 빼곡하다.
+
+이 복잡한 내용이 무엇을 의미하는지는 잘 모르겠지만, 꽤나 불편한 느낌이 든다.
+
+공간 속에서 펜이 종이를 긁는 소리와 빗방울이 옷자락에서 바닥으로 떨어지는 소리 외에는 모두가 숨을 죽이고 있다.
+마치 세계가 당신의 행동 한 프레임 한 프레임을 지켜보는 듯 한 기분이다.
+
+[이름을 입력하세요]
+_______(playername)____________
+
+사제 : 임시 등록 서류 작성 완료 되셨구요. playername님, 여기 새 기억보존장치 받으시면 됩니다. 그리고, 이건 도움이 될까 해서 드리는 거에요. 가지고 계시던 건 모두 젖어버리셨으니까 말이죠. 그리고...
+
+— item "수첩" 획득 —
+
+수첩 첫 페이지에는 정갈하게 인쇄된 활자가 적혀있다.
+"망각은 순수로의 첫 걸음이다."
+(루스트라 기억구제국 배포용)
+
+사제 : 루스트라 교단에 입교하신 것을 환영해요, 형제님.
+사제는 오른 손바닥으로 작은 글씨로 적힌 경고 문구를 가리는 듯 한 자세로 서류를 거두어간다.
+
+오싹한 기분이 등줄기를 훑는다.
+이름과 기억보존장치라는 작은 기계장치를 대가로, 어마어마한 실수를 저지른 것 같은 기분을 떨칠 수가 없다.
+
+하지만 당신은 그 실수가 어떤 종류인지조차 모른다.`,
+    choices: [
+      {
+        label: "ㅇ 서류를 읽고 서명한다. (이름 입력)",
+        action: () => {
+          const name = prompt("이름을 입력하세요", state.playerName ?? "");
+          if (name && name.trim().length) state.playerName = name.trim();
+          state.mam = { level: 1, label: "1층(기초) — 무상" };
+          state.flags.signedLustra = true;
+          state.flags.hasNotebook = true;
+          addItem("수첩");
+          addNotebookEntry("수첩 — 첫 페이지", "망각은 순수로의 첫 걸음이다.\n(루스트라 기억구제국 배포용)");
+          learnPurificationCountdown(3);
+          addFood(1);
+          toast("MAM(1층)과 수첩을 받았다. (+식량 1)");
+        },
+        to: "A_AFTER"
+      }
+    ]
+  },
+
+  A_AFTER: {
+    title: "재심사장 밖",
+    text:
+`당신은 이름을 얻었다.
+그리고 무엇인가를 잃었다는 기분이 든다.
+
+…하지만 그 실수가 어떤 종류인지조차 모른다.
+
+(다음: A루트 메인 노드로 이어붙이기)`,
+    choices: [
+      { label: "ㅇ (테스트 종료) 처음으로", action: resetRun }
+    ]
+  },
+
+  B_RUN_START: {
+    title: "정화일 B루트",
+    text:
+`당신은 드론의 요구에 응하는 것보다도 본능적인 공포에 몸을 맡겨, 즉시 뒤로 돌아 달음박질했다.
+
+드론 : 검문에 응하지 않을 시, 제압탄 사격이 허용됩니다. 5초 내로 돌아오시기를 권장드립니다.
+…3초 내로 돌아오지 않을 시 시민의 안전을 위해 제압탄 사격이 허용됩니다.
+
+무작정 앞으로, 앞으로.
+폐부가 찢겨나가는 고통 속에서도 당신은 달린다.
+
+드론 : 2… 1.. 제압탄을 사용합니다.
+
+텅.
+
+당신의 시선은 도시 끝에서 지면을 향한다.
+허리에서 강렬한 통증이 느껴진다.
+지면에 고여가는 물과 함께, 기억이 흐릿해져간다. 도망쳐야하는 이유는…?
+`,
+    choices: [
+      { label: "ㅇ 고통을 짓이기고 도망친다. (체력-2)", to: "B_ESCAPE", action: () => state.hp = clamp(state.hp - 2, 0, 9) },
+      { label: "ㅇ 정신을 잃는다. (체력-1)", to: "B_FAINT", action: () => state.hp = clamp(state.hp - 1, 0, 9) }
+    ]
+  },
+
+  B_ESCAPE: {
+    title: "도주",
+    text:
+`이유는 몰라도 당신은 지친 몸을 억지로 끌어당겨 일어난다.
+드론이 가까워진다.
+
+탕!
+드론 : 실탄의 사용이 승인되었습니다.
+
+철창을 넘어선 곳은 가파른 경사로 이루어진 동굴이었다.
+당신은 구르고, 굴러 떨어진다.
+허벅지에 불이 붙은 것 같은 통증—총상이다.
+
+하지만 당신은 살아남았다.`,
+    choices: [
+      { label: "ㅇ (카타콤으로) 계속", to: "B_CATACOMB_PLACEHOLDER" }
+    ]
+  },
+
+  B_FAINT: {
+    title: "기절",
+    text:
+`당신은 실존할지도 모르는 ‘기절할 권리’를 마음속으로 주장하며 정신을 놓아버린다.
+
+땅바닥이 차갑고,
+당신을 이끄는 누군가의 팔은 더 차갑다.
+
+(당신은 깨어나게 될 것이다.)`,
+    choices: [
+      { label: "ㅇ (카타콤으로) 계속", to: "B_CATACOMB_PLACEHOLDER" }
+    ]
+  },
+  B_CATACOMB_PLACEHOLDER: {
+    title: "정화일 B루트 > "안티-레이니즘" 레지스탕스 조우",
+    text: `
+눈을 감으면 어둠이 내려앉는다.
+당신은 의식을 잃지 못한 채, 어둠 속으로 가라앉는 기분을 느낀다.
+
+당신의 머릿속에 어떤 종교의 한 구절이 아스라히 펼쳐진다.
+
+"신께서 어둠 중에 이르시되 빛이 있으라 하셨고, 이에 빛이 있었다."
+
+고통에 몸부림치면서도 당신은 빛을 갈구한다.
+무거운 눈꺼풀을 들어 올렸음에도, 어둠이 가득한 곳.
+
+허나, '빛이 있으라'는 구절과 함께 저 멀리서 아주 희미한 빛이 당신에게 다가오기 시작했다.
+
+??? : 어이, 무슨 소리가 났나 했더니 정말 저기 사람이 굴러들어왔잖아?
+
+??? : 어이쿠, 꼴이 엉망이로구만. 빌어먹을 세정 강우가 쏟아지는 날에는 이렇게 같이 흘러들어오는 인간들도 종종 있단 말이지.
+
+두 사람의 목소리.
+
+예의를 아는 사람이라면 응당 일어나 악수나 목례라도 하겠지만, 당신은 예의를 차릴 수 있는 상태가 아니다.
+그나마 인사 대신 건넬 수 있었던 것은 나지막한 신음소리뿐이었다.
+
+??? : 밖에서 비도 맞고, 기억도 잃고, 온갖 고초를 헤치고 왔다는 늠름한 표정이로구만. 기개가 있어.
+
+??? : 이것 봐, 보리스. 이 녀석 허벅지에 총상까지 있는데? 간덩이가 보통 부은 게 아닌걸?
+
+두 남성은 당신을 찬찬히 둘러보며 감상을 말한다.
+조금만 더 몸 상태가 멀쩡했다면 당신은 "구경 그만하고 꺼져" 같은 말을 했을지도 모른다.
+
+보리스 : 뭐? 총상? 어디, 어디. 이것 참… 이봐 쉬나벨, 총상 환자면 어서 옮겨야지! 그렇게 구경만 하고 있을 건가?
+
+쉬나벨 : 나 참, 오랜만에 밖에서 흘러온 사람이라서 내가 의사인 줄도 깜빡하고 있었네 그려.
+자, 어서 옮기자고. 이봐, 좀 아프더라도 참게. 뭣하면 정신을 잠깐 정도는 잃어도 괜찮네.
+어차피 총알 뺄 때 아파서 일어나게 될 테니까 말이야.
+
+당신은 보리스와 쉬나벨에게 양 겨드랑이와 발목이 붙잡혔다.
+쾌적한 승차감의 들 것이라고는 도저히 말할 수 없었지만, 한결 마음이 편안해진 덕분인지…
+
+당신은 다시 정신을 잃었다.
+
+(응급처치) 체력 +1
+    `,
+    choices: [
+      { label: "…", to: "B_CATACOMB_TREAT", action: (s) => { s.hp = Math.min(s.maxHp, s.hp + 1); } }
+    ]
+  },
+  B_CATACOMB_TREAT: {
+    title: "카타콤 > 치료와 수첩",
+    text: `
+정신을 차리고 눈을 떠 보니 당신에게 보이는 것은 낯선 천장이었다.
+기억을 모조리 잃은 당신에게 익숙한 것이 있을 리 만무하지만, 어쨌든 잿빛 구름으로 가득 찬 하늘보다는 훨씬 나은 편이었다.
+
+당신이 누워 있던 침상 옆에는 보리스와 쉬나벨이 있었다.
+
+예의를 좀 차리자면, 두 남자가 당신을 옮겨 와서 치료한 곳은 퍽 아늑한 느낌이 들었다.
+건조하고 흙냄새가 나고, 조금 비좁지만, 당신은 그 공간을 꽤 마음에 든다고 생각했다.
+특히 테이블 위의 오래된 가스램프 불꽃이 일렁일 때마다 돌로 깎여 울퉁불퉁한 벽의 그림자들이 춤을 추는 느낌이 더욱 좋았다.
+
+쉬나벨 : 이보게 보리스, 마침내 그가 눈을 떴네!
+그나저나 자네 정말 대단하더구만! 상처에서 납탄을 뽑아내고 소독하고 꿰메고 약을 바르고 붕대를 감는 동안 내내 코도 안 골고 기절해 있더라고.
+마취도 안 했는데 말이야.
+
+보리스 : 자네, 운이 좋은 편이군.
+이 친구, 말은 이렇게 사짜 같게 하는데다 왠 까마귀부리 가면 같은 걸 쓰고 다니지만,
+이 카타콤 내부에선 이 정도 의료실력을 갖춘 녀석이 없거든.
+우리가 자넬 발견한 시기가 빨랐던 것도 한몫 했겠지.
+
+당신은 예의를 갖춰 감사를 표하려고 자리에서 일어나려 했지만, 전신의 격통이 몰려와 도로 누울 수밖에 없었다.
+
+쉬나벨 : 얼마나 급박하게 쫓겼는지는 모르겠지만 전신이 타박상과 열상이 있어.
+허리 쪽엔 강한 찰과상에 허벅지는 총상까지. 좀 쉬어둘 필요가 있네.
+물론 회복력이 어마어마해서 한숨 더 푹 자고 나면 아마 움직일 정도는 될 거야!
+숨 쉬는 방법은 잊지 않아서 정말 다행이군, 친구!
+
+보리스 : …미안하게 되었지만 자네 소지품을 좀 뒤져보았네.
+이곳이 어디인지는 아직 말해줄 수는 없지만, 외지인을 데려올 때는 늘 경계가 필요한 법 아니겠나?
+
+보리스는 협탁에서 당신의 소지품…이었던 것처럼 보이는 무언가를 꺼내 당신 앞에 내놓았다.
+
+너덜너덜하고 물에 젖어 쓰레기 외의 용도로는 보이지 않는 수첩,
+그리고 목에 걸고 있던 파손된 기억보존장치.
+이제는 반으로 박살 난 데다가, 나머지 반쪽은 지상에 두고 온 듯하다.
+
+보리스 : 보다시피 자네 소지품은 이게 전부던데…
+어디 원한이라도 산 게 아닌가 싶을 정도일세.
+우선 이거라도 받게. 아무리 그래도 이 정도는 가지고 있는 게 좋을 걸세.
+새 수첩은 아니지만…
+
+보리스에게 말라빠지고 아무런 무늬 없는 수첩을 건네받았다.
+듬성듬성 페이지가 찢겨 있고, 표지 안쪽에는 사람의 이름이 적혀 있었으나 펜으로 지워진 흔적이 남아 있다.
+당신과 어딘가 닮은 수첩이다.
+
+보리스 : 여기선, 이 도시에선 기억은 사치품에 가깝네.
+그래서 많은 사람들은 이런 수첩에 자신을 기록하지.
+물론 카타콤 안에 박혀 있다면 기억을 잃을 일은 별로 없지만 말이야.
+그 빌어먹을 비 때문에 우리는 여기 숨어살고 있지…
+
+당신은 보리스의 눈동자 속에서 끓는 듯한 분노를 느낀다. 당장이라도 탁자를 내려치며 화를 낼 기세다.
+
+다행히 쉬나벨이 끼어들어 당신에게 말했다.
+
+쉬나벨 : 자, 자. 당장 저 비를 말라비틀어지게 할 방법은 없지 않나, 보리스.
+우리들이 뜻을 모으고 시간을 들인다면, 빠른 시일 내로 저런 빗물은 변기 물로나 쓰게 될 거라고. 하하!
+그나저나 친구, 혹시 자네 이름은… 기억하나?
+
+당신은 고개를 저었다.
+
+쉬나벨 : 그렇다면 임시로라도 자네 이름을 가지고 있는 게 좋을 걸세.
+이 동네는 그게 중요하거든.
+자네가 기억하지 못한다 한들 어딘가에 적어놓는다면, 신분으로서 기능하기 때문이지.
+그게 있고 없고가 꽤 중요하단 말일세.
+
+…자, 그럼 여기에 한 번 적어보겠나?
+
+쉬나벨은 쾌활하게 검지손가락으로 수첩 안쪽을 가리켰다.
+    `,
+    choices: [
+      { label: "이름을 적는다.", to: "B_MAM_OFFER", action: (s) => { 
+const name = prompt("이름을 입력하세요", s.playerName || "");
+if (name && name.trim()) { s.playerName = name.trim().slice(0, 12); }
+addItem("수첩");
+addNotebookEntry("수첩 첫 페이지(카타콤): 표지 안쪽의 이름은 지워져 있다.");
+ } },
+      { label: "침묵한다. (무명으로 진행)", to: "B_MAM_OFFER", action: (s) => { 
+s.playerName = "무명";
+addItem("수첩");
+addNotebookEntry("수첩 첫 페이지(카타콤): 표지 안쪽의 이름은 지워져 있다.");
+ } }
+    ]
+  },
+  B_MAM_OFFER: {
+    title: "카타콤 > 의뢰와 MAM",
+    text: `
+당신은 수첩에 이름을 적고 나니 희미하게 몸에 온기가 도는 기분이 들었다.
+망망대해에서 표류하던 뗏목이 겨우 닻을 내리고, 주위를 잠시 둘러볼 여유가 생긴 느낌이었다.
+
+아주 약간의 안도를 느끼는 것도 잠시, 보리스가 사뭇 진지한 표정으로 자세를 고쳐 앉고 당신을 바라본다.
+
+보리스 : 자네에게 부탁할 것이 하나 있네. 아아— 물론 맨입으로는 아니지.
+
+쉬나벨 : 그렇다고 부상 중인 (playername), 자네에게 그렇게까지 어려운 일도 아니야.
+우선은… 자기가 처한 상황을 한 번 둘러볼 수 있는 기회도 겸사겸사 주는 거라고나 할까!
+
+그렇게 말한 보리스는 두터운 재킷의 품을 뒤적거리고, 담배갑 만한 장치를 꺼내 당신에게 내밀었다.
+
+보리스 : MAM. 기억보존장치라네. Memory Authentication Module의 줄임말이지.
+자네가 쓰던 건 더 이상 작동하는 물건이라고 보긴 어려우니 말이야.
+이건 의뢰 선금으로 지급하는 거야.
+
+이게 있어야 도시 내에서 자네를 의심하지도 않을 테고 말이야.
+이건 1단계. 사람이 사는 데 있어서 가장 필요한 기초적인 것을 '기억하게' 지켜주는 물건일세.
+언어, 상식은 물론이고… 숨 쉬는 법과 눈 깜빡이는 법도 포함이지.
+
+쉬나벨 : 물론 재수 없게도 [루스트라 교단]의 교리도 포함돼 있고 말이야!
+낙원은 무지한 어린아이와 같은 자들에게 있나니… 기억은 과욕이요, 망각은 축복이라!
+
+쉬나벨은 키득거리며 교단의 유명한 교리 몇 가지를 장난스럽게 읊어대고는 토하는 시늉을 했다.
+
+보리스 : 그래… 그 빌어먹을 놈들의 교리가 포함돼 있지.
+아, 이미 지워져 버린 기억이 되돌아오는 장치는 아니라네.
+자네의 상식이 불완전한 것도 아마 기존에 가지고 있던 MAM이 파손돼서일 거야.
+
+어쨌든 이게 있으면… 빗속에서 숨 쉬는 걸 까먹은 채로 멍청하게 질식사할 일은 없다는 얘기지.
+
+당신은 기억보존장치를 향해 손을 뻗다가 멈칫한다.
+그리고 보리스에게 의뢰란 어떤 것인지 묻는다.
+
+보리스 : 그래. 뭐든 의심부터 해보는 건 좋은 선택이지.
+
+쉬나벨 : 핫하! 생각이라는 것을 시작할 수 있게 되었군? 시작이 좋네, 보리스.
+이 친구야말로 자네의 심부름에 딱 적합한 인재야!
+
+보리스 : …그래, 그럴지도 모르겠군.
+자, 그럼 설명하지.
+
+보리스의 의뢰는 도시의 어느 주소에 있는 집에 가서 편지를 전해달라는 것이었다.
+어머니와 딸이 함께 살고 있는 집.
+
+보리스 : 다시 한 번 말하지만, 도착할 때까지는 그 편지를 열어서는 안 되네.
+그냥 딱 전해주고, 대답만 듣고 돌아오게.
+
+기간은… 그래. 오늘 저 빌어먹을 비가 내렸으니, 앞으로 **3일 후**에 다시 올 거야.
+그러니 **2일 안으로** 내게 돌아와주면 되네.
+여기서 먼 곳은 아니니 금방 돌아올 수 있을 거야.
+
+그리고 만약 도망간다면…
+
+쉬나벨 : 어이, 보리스! 이 친구가 우리한테 치료받은 은혜도 모르는 그런 매정한 녀석이라고 생각하는 건 아니겠지? 응?
+
+쉬나벨이 보리스의 말을 자르자, 보리스는 한숨을 쉬었다.
+
+보리스 : 그래, 그래. 그럴 거라고 생각하진 않는다네, 쉬나벨.
+어쨌든 이 의뢰는 받는 게 자네한테도 좋을 거야. 이 MAM이 필요할 테니 말이야.
+    `,
+    choices: [
+      { label: "보리스의 의뢰를 받아들인다.", to: "B_MORNING_DEPART", action: (s) => { 
+// MAM 지급(기초 패키지)
+s.mam = { tier: 1, name: "MAM(기초)", obtained: true };
+addItem("MAM(기초)");
+addNotebookEntry("MAM 지급 기록: 기초 패키지(언어/상식/생존 자동기억).");
+// 정화일 카운트다운을 알게 됨
+learnPurificationCountdown(3);
+// 휴식(하룻밤)
+s.hp = Math.min(s.maxHp, s.hp + 1);
+s.hunger = Math.min(s.maxHunger, s.hunger + 2);
+advanceDays(1);
+ } }
+    ]
+  },
+  B_MORNING_DEPART: {
+    title: "카타콤 > 출발",
+    text: `
+또 하나의 밤이 지나가고, 또 하나의 아침이 찾아왔다.
+당신은 어두운 카타콤의 방에서 깨어나며 램프의 불꽃이 약해진 것을 깨달았다.
+
+방을 나서자 보리스와 쉬나벨이 당신에게 다가왔다.
+
+보리스 : 여기서 쭉 외길을 따라 걸어나가면 자네가 쓰러져 있던 그 장소에 도착하게 되네.
+그곳에서 다시 거슬러 올라가면 도시의 외곽에 도착할 수 있을 거야.
+나름대로 구획 정리가 잘 되어 있으니, 주소를 찾는 것도 어렵진 않을 걸세.
+다만 도시가 꽤 크니, 반나절 정도는 걸어야 할 수도 있네.
+
+쉬나벨 : 자, 모험을 떠나는 여행자에게 선물이 있지! 헤헤.
+가면서 배가 고프면 먹도록 해! 아마 하루 종일 먹어야 할 거야!
+
+쉬나벨은 당신에게 종이로 싼 커다란 보존식 하나를 건넸다.
+그의 말대로 잘 배분해 먹으면 하루치 식량이 될 수 있을 정도의 크기였다.
+
+(식량 +1)
+
+당신은 두 사람에게 고개 숙여 인사를 건넨 뒤,
+되도록 빠르게 답변을 받아 돌아오겠노라고 말하고 뒤로 돌아 전진했다.
+
+이곳으로 돌아오기까지 앞으로 이틀.
+그리고 다음 정화일까지 D-3.
+
+어딘가에 당신의 파편이 흩어져 있을지도 모르는 도시를 향해, 당신은 걸음을 옮겼다.
+    `,
+    choices: [
+      { label: "도시로 향한다.", to: "B_AFTER", action: (s) => { addFood(1); } }
+    ]
+  },
+  B_AFTER: {
+    title: "여정의 시작",
+    text: `
+당신은 카타콤의 외길을 따라 걸었다.
+저 멀리, 어제 당신이 굴러떨어졌던 그 틈새가 다시 보인다.
+
+위로 올라가면 비.
+아래로 내려가면 살아남은 사람들.
+당신은 잠시 숨을 고르고, 다시 위를 향해 기어오르기 시작했다.
+
+도시는 여전히 회색이었다.
+그리고 당신의 손에는, 이름과 주소가 적힌 수첩 한 권이 있었다.
+
+(데모는 여기까지입니다.)
+    `,
+    choices: [
+      { label: "처음으로 돌아간다.", to: "TITLE" }
+    ]
+  },
+  PURIFICATION_DAY: {
+    title: "정화일",
+    text:
+`검은 하늘이 다시 열리고, 세정 강우가 도시 위로 쏟아진다.
+
+비는 차갑고, 무심하고, 성실하다.
+사람의 얼굴을 씻기듯 기억을 씻겨낸다.
+
+당신은 목에 걸린 MAM을 손으로 움켜쥔다.
+작동음이 가늘게 이어진다. 기계가 아니었다면—당신은 숨 쉬는 법부터 잊어버렸을 것이다.
+
+어딘가에서 방송이 울린다.
+
+“정화일 집행 중. 시민 여러분께서는 침착히 실내로 대피하십시오.”`,
+    choices: [
+      { label: "비를 견딘다", action: () => {
+          ensurePurificationDefaults();
+          // 다음 정화일까지 3일(프로토타입 값)로 리셋
+          state.purification.daysRemaining = 3;
+
+          // 후유증: 체력 -1
+          state.hp = clamp(Number(state.hp ?? 0) - 1, 0, Number(state.maxHp ?? 5));
+          if(state.hp <= 0){
+            state.nodeId = "DEATH_BREATH";
+            render();
+            return;
+          }
+
+          // 원래 노드로 복귀
+          const back = state.flags?.returnNode ?? "PROLOGUE";
+          state.nodeId = back;
+          toast("정화일이 지나갔다. (체력 -1)");
+        } }
+    ]
+  },
+
+  DEATH_BREATH: {
+    title: "배드 엔딩 — 질식",
+    text:
+`당신은 모든 기억을 잃었다.
+생각하는 법도, 걷는 법도, 살아가는 것도, 존재하는 것도.
+숨을 쉬는 것조차.
+
+당신은 질식으로 사망했다.
+이 답답한 세상에 절망하여 질식한 것이 아닌,
+정말로 숨 쉬는 법을 잊어서.
+
+하지만 이 도시에선 부끄러운 일이 아니다.
+매년 수많은 사람들이 대책 없이 세정 강우를 맞아
+호흡법을 잊고 사망한다.
+
+부끄러운 일도 아니지만, 특별한 죽음도 아니라는 뜻이다.
+당신의 몸은 한 줌 온기조차 보존하지 못한 채,
+싸늘히 식어 빗물에 잠겨들었다.`,
+    choices: [
+      { label: "처음부터 다시", action: resetGame },
+      { label: "프롤로그로(상태 유지)", to: "PROLOGUE" }
+    ]
+  }
+
+  ,
+
+  DEATH_HUNGER: {
+    title: "배드 엔딩 — 굶주림",
+    text:
+`당신은 배가 고프다는 감각조차 또렷하게 붙잡지 못한 채, 하루를 또 넘겼다.
+
+허기는 점점 '생존'의 가장자리로 당신을 밀어냈다.
+그 끝에서, 당신은 한 번 더 숨을 들이마시려 했지만—
+몸이 더는 움직이지 않았다.
+
+이 도시에서 굶어 죽는 일은 '특별'하지 않다.
+정화일이 아니어도, 사람은 사라진다.
+이름도, 이유도, 남은 기록도 없이.
+
+당신은 조용히 사망했다.`,
+    choices: [
+      { label: "처음으로", action: resetGame, to: "PROLOGUE" }
+    ]
+  }
+
+};
+
+function interpolate(s){
+  if(!s) return s;
+  if(state.playerName && String(state.playerName).trim()){
+    const n = String(state.playerName).trim();
+    return s.replaceAll("(playername)", n).replaceAll("playername", n);
+  }
+  return s;
+}
+
+function render(){
+  updateStats();
+  let node = NODES[state.nodeId];
+  if(!node){
+    console.warn("Unknown node:", state.nodeId);
+    node = { title: "오류", text: `정의되지 않은 노드: ${state.nodeId}
+
+(개발 중인 프로토타입에서 발생할 수 있습니다.)`, choices: [{label:"프롤로그로", to:"PROLOGUE"}] };
+  }
+  document.getElementById("title").textContent = node.title ?? "";
+  document.getElementById("text").textContent = interpolate(node.text ?? "");
+  const choicesEl = document.getElementById("choices");
+  choicesEl.innerHTML = "";
+  (node.choices ?? []).forEach((c) => {
+    const btn = document.createElement("button");
+    btn.textContent = c.label;
+    btn.addEventListener("click", () => {
+      try { if (typeof c.action === "function") c.action(); }
+      catch(e){ console.error(e); toast("오류: " + e.message); }
+      if (c.to) { state.nodeId = c.to; render(); }
+    });
+    choicesEl.appendChild(btn);
+  });
+}
+
+const dlgNotebook = document.getElementById("dlgNotebook");
+document.getElementById("btnNotebook").addEventListener("click", () => {
+  const content = document.getElementById("notebookContent");
+  if(!state.flags.hasNotebook || state.notebookEntries.length === 0){
+    content.textContent = "아직 기록이 없습니다.";
+  } else {
+    const lines = [];
+    state.notebookEntries.forEach((e, idx) => {
+      const when = new Date(e.at).toLocaleString();
+      lines.push(`(${idx+1}) ${e.title}
+${e.body}
+— ${when}
+`);
+    });
+    content.textContent = lines.join("\n\n");
+  }
+  dlgNotebook.showModal();
+});
+document.getElementById("btnCloseNotebook").addEventListener("click", () => dlgNotebook.close());
+
+document.getElementById("btnSave").addEventListener("click", saveGame);
+document.getElementById("btnLoad").addEventListener("click", loadGame);
+  document.getElementById("btnRest").addEventListener("click", rest);
+document.getElementById("btnReset").addEventListener("click", resetGame);
+
+let toastTimer = null;
+
+function enterPurification(){
+  // 강제 이벤트 진입 (원래 위치로 돌아가기 위한 포인터 보관)
+  if(!state.flags) state.flags = {};
+  state.flags.returnNode = state.nodeId;
+  state.nodeId = "PURIFICATION_DAY";
+}
+
+function rest(){
+  // 시간이 흐른다(플레이어가 '모르더라도' 내부적으로는 흘러감)
+  if(typeof state.day !== "number") state.day = 0;
+  state.day += 1;
+
+  // 휴식 효과: 체력 +1 (상한: maxHp)
+  const maxHp = Number(state.maxHp ?? 3);
+  state.hp = clamp(Number(state.hp ?? 0) + 1, 0, maxHp);
+
+  // 휴식 패널티: 허기 -1 (바닥 0)
+  const maxH = Number(state.maxHunger ?? 5);
+  state.hunger = clamp(Number(state.hunger ?? 0) - 1, 0, maxH);
+
+  // 굶주림 페널티: 허기가 0이면 체력 -1
+  if(state.hunger === 0){
+    state.hp = clamp(Number(state.hp ?? 0) - 1, 0, maxHp);
+  }
+
+  // 다음 정화일까지 카운트 감소
+  advanceDays(1);
+
+  // D-0이면 정화일 이벤트로 강제 진입 (MAM 없으면 즉사)
+  ensurePurificationDefaults();
+  if(state.purification.daysRemaining === 0){
+    // 정화일을 "체감"하는 순간부터는 주기를 알게 된다
+    state.purification.known = true;
+    const hasMAM = (state.mam?.level ?? 0) > 0;
+    if(!hasMAM){
+      state.nodeId = "DEATH_BREATH";
+    } else {
+      if(!state.flags) state.flags = {};
+      state.flags.returnNode = state.nodeId;
+      state.nodeId = "PURIFICATION_DAY";
+      // (프로토타입) 다음 정화일까지 3일로 리셋
+      state.purification.daysRemaining = 3;
+    }
+  }
+
+  // 체력이 0이면(굶주림 포함) 사망 처리
+  if((state.hp ?? 0) <= 0 && state.nodeId !== "DEATH_BREATH"){
+    state.nodeId = "DEATH_HUNGER";
+  }
+
+  render();
+  const starve = (state.hunger === 0) ? " / 굶주림(-1)" : "";
+  toast(`휴식했다. (Day +1 / 체력 +1 / 허기 -1${starve})`);
+}
+function toast(msg){
+  let el = document.getElementById("toast");
+  if(!el){
+    el = document.createElement("div");
+    el.id = "toast";
+    el.style.position = "fixed";
+    el.style.left = "50%";
+    el.style.bottom = "18px";
+    el.style.transform = "translateX(-50%)";
+    el.style.background = "rgba(18,20,27,.95)";
+    el.style.border = "1px solid var(--line)";
+    el.style.color = "var(--text)";
+    el.style.padding = "10px 12px";
+    el.style.borderRadius = "999px";
+    el.style.fontSize = "14px";
+    el.style.zIndex = "999";
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.opacity = "1";
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.style.opacity = "0"; }, 1400);
+}
+
+render();
+
+</script>
+</body>
+</html>
