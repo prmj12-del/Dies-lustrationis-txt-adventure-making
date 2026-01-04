@@ -1,0 +1,2035 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>나락의 구덩이 — stable</title>
+<style>
+  :root {
+    --bg0:#0e120f;
+    --bg1:#141b15;
+    --panel:#1b231c;
+    --panel2:#141a14;
+    --text:#e8e2d7;
+    --muted:#b9b0a2;
+    --dim:#8a847a;
+    --accent:#c8b57a;
+    --accent2:#79b08a;
+    --danger:#d67a7a;
+    --border:#2b3a2c;
+    --btn:#223026;
+    --btn2:#2b3a2f;
+    --shadow: 0 12px 40px rgba(0,0,0,.45);
+    --radius: 18px;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif;
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family: var(--sans);
+    background:
+      radial-gradient(1200px 700px at 20% 0%, rgba(121,176,138,.12), transparent 55%),
+      radial-gradient(900px 700px at 80% 20%, rgba(200,181,122,.10), transparent 55%),
+      linear-gradient(180deg, var(--bg0), var(--bg1));
+    color:var(--text);
+  }
+  .wrap{
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 18px;
+    box-sizing: border-box;
+  }
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.70);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  .brand{
+    display:flex; gap:10px; align-items:baseline;
+  }
+  .brand h1{
+    font-size: 16px; margin:0; letter-spacing: .2px;
+  }
+  .brand .sub{
+    font-size: 12px; color: var(--dim);
+  }
+  .layout{
+    display:grid;
+    grid-template-columns: 1fr 320px;
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .panel{
+    border: 1px solid var(--border);
+    background: rgba(27,35,28,.82);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+  .panelHeader{
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(20,26,20,.65);
+  }
+  .panelHeader .title{
+    font-weight: 700;
+    letter-spacing: .3px;
+  }
+  .panelBody{
+    padding: 14px;
+  }
+
+  /* Scene image slot (A안: stable.html에 임베드 가능) */
+  .sceneArt{
+    height: 164px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.10));
+    overflow: hidden;
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+    margin-bottom: 12px;
+    position: relative;
+  }
+  .sceneArt img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none; /* 기본은 플레이스홀더 */
+    filter: saturate(.85) contrast(1.05) brightness(.92);
+  }
+  .sceneArtPh{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding: 0 14px;
+    color: rgba(245, 232, 181, .80);
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-shadow: 0 2px 0 rgba(0,0,0,.35);
+    background:
+      radial-gradient(80% 120% at 30% 10%, rgba(255,255,255,.10), transparent 60%),
+      radial-gradient(90% 130% at 80% 80%, rgba(255,255,255,.06), transparent 65%);
+  }
+  .story{
+    line-height: 1.65;
+    color: var(--text);
+    font-size: 15px;
+    white-space: normal;
+  }
+  .story .muted{color:var(--muted);}
+  .story .dim{color:var(--dim);}
+  .story hr{
+    border:0; border-top:1px solid var(--border);
+    margin: 14px 0;
+  }
+  .choices{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  button.choice{
+    all:unset;
+    cursor:pointer;
+    padding: 12px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(34,48,38,.95), rgba(27,35,28,.95));
+    box-shadow: 0 10px 26px rgba(0,0,0,.35);
+    transition: transform .06s ease, border-color .12s ease, background .12s ease;
+  }
+  button.choice:hover{
+    transform: translateY(-1px);
+    border-color: rgba(200,181,122,.55);
+  }
+  button.choice:active{
+    transform: translateY(0px);
+  }
+  button.choice[disabled]{
+    opacity:.45;
+    cursor:not-allowed;
+    filter:saturate(.7);
+  }
+  .choice .label{
+    display:flex; justify-content:space-between; gap:12px; align-items:center;
+  }
+  .choice .label .left{
+    font-weight: 650;
+  }
+  .choice .label .right{
+    font-family: var(--mono);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .pill{
+    display:inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.55);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  .pill.good{ color: var(--accent2); border-color: rgba(121,176,138,.35);}
+  .pill.bad{ color: var(--danger); border-color: rgba(214,122,122,.35);}
+  .grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .sideBlock{
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sideBlock:last-child{border-bottom:0;}
+  .statGrid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .stat{
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.55);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .stat .k{
+    color: var(--dim);
+    font-size: 12px;
+  }
+  .stat .v{
+    font-family: var(--mono);
+    font-size: 16px;
+    margin-top: 2px;
+  }
+  .tabs{
+    display:flex; gap: 8px;
+    margin-top: 10px;
+  }
+  .tab{
+    cursor:pointer;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.55);
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .tab.active{
+    border-color: rgba(200,181,122,.55);
+    color: var(--text);
+    background: rgba(34,48,38,.70);
+  }
+  .list{
+    margin-top: 10px;
+    display:flex;
+    flex-direction:column;
+    gap: 8px;
+    max-height: 320px;
+    overflow:auto;
+    padding-right: 4px;
+  }
+  .card{
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.55);
+    border-radius: 14px;
+    padding: 10px;
+  }
+  .card .name{
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .card .desc{
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+    white-space: pre-line;
+  }
+  .footerHint{
+    margin-top: 8px;
+    color: var(--dim);
+    font-size: 12px;
+  }
+  .inlineInput{
+    display:flex;
+    gap: 10px;
+    align-items:center;
+    margin-top: 10px;
+  }
+  input[type="text"]{
+    flex:1;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(20,26,20,.55);
+    color: var(--text);
+    outline:none;
+  }
+  .smallBtn{
+    all:unset;
+    cursor:pointer;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: rgba(34,48,38,.70);
+    color: var(--text);
+  }
+  .smallBtn:hover{ border-color: rgba(200,181,122,.55); }
+  .notice{
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="brand">
+      <h1>나락의 구덩이</h1>
+      <div class="sub">stable · 임베드 데이터 · Dock 데모</div>
+    </div>
+    <div id="topPills" style="display:flex;gap:8px;align-items:center;">
+      <span class="pill" id="pillDay">D-13</span>
+      <span class="pill" id="pillTime">—</span>
+      <span class="pill" id="pillRegion">—</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <div class="panelHeader">
+        <div class="title" id="sceneTitle">로딩...</div>
+      </div>
+      <div class="panelBody">
+        <div class="sceneArt" id="sceneArt">
+          <img id="sceneArtImg" alt="" />
+          <div class="sceneArtPh" id="sceneArtPh">이미지 슬롯 (추후 삽입)</div>
+        </div>
+        <div class="story" id="story"></div>
+        <div class="choices" id="choices"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="sideBlock">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-weight:800;letter-spacing:.2px;">상태</div>
+          <button class="smallBtn" id="btnRestart" title="처음부터">새로 시작</button>
+        </div>
+        <div class="statGrid" id="statGrid"></div>
+        <div class="footerHint" id="charLine">—</div>
+      </div>
+
+      <div class="sideBlock">
+        <div style="font-weight:800;letter-spacing:.2px;">인벤토리</div>
+        <div class="tabs">
+          <div class="tab active" data-tab="passive">PASSIVE</div>
+          <div class="tab" data-tab="items">ITEM</div>
+          <div class="tab" data-tab="clues">CLUE</div>
+          <div class="tab" data-tab="traits">TRAIT</div>
+        </div>
+        <div class="list" id="invList"></div>
+        <div class="footerHint">※ PASSIVE/ITEM/CLUE/TRAIT는 모두 “데이터”로만 저장. 사용은 이벤트에서 자동 반영.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Embedded data (A안) -->
+<script type="application/json" id="embeddedStoreItems">[{"id": "conv_item_01", "name": "부둣가 명물 외눈 오징어 팝콘", "price": 1, "desc": "부둣가에서 가장 유명한 '외눈 오징어'를 튀겨 버터팝콘과 함께 제공하는 간식. 비릿고소하고 씁쓸한 끝맛이 인상적이다.", "effect_text": "체력+1", "tag": "회복"}, {"id": "conv_item_02", "name": "웨이더 부츠", "price": 5, "desc": "튼튼하고 물이 새지 않는 어부들의 애용 아이템 웨이더 부츠. 진창이나 배 위에서 아주 유용하다. 물 속에 빠지면 소용 없으니 주의하자.", "effect_text": "민첩+1, 최대체력+1", "tag": "장비"}, {"id": "conv_item_03", "name": "검게 탄 인센스 스틱", "price": 2, "desc": "보통의 모기향과는 다르게 검은 색의 향이다. 표면에서는 미세한 쑥향기가 나는 듯 하다. 불빛에 비추어 보면 알 수 없는 언어가 빼곡히 적혀있다.", "effect_text": "1회 체력 하락 결과를 막고 아이템이 제거됨.", "tag": "소비"}, {"id": "conv_item_04", "name": "개안!에너지드링크!(카페인666mg)", "price": 1, "desc": "영안도 번쩍! 개안하게 해주는 미친 용량의 카페인 드링크. 캔 겉면의 부릅 뜬 눈동자가 살짝 충혈되어보이는 것은 기분 탓이겠지.", "effect_text": "다음 판정에서 영력과 민첩 스탯에 +2 보너스를 받고, 정신력 -1", "tag": "회복"}, {"id": "conv_item_05", "name": "기념품 \"손가락 산호\" 키링", "price": 2, "desc": "손가락 모양을 한 산호의 조각 기념품. 산호를 가공해서 판매하는 것은 불법이니, 부둣가 외의 지역에서 자랑하는 것은 그만두는 것이 좋겠다. 어쩐지 다른 네 손가락을 찾고있는 것 같다.", "effect_text": "1회 정신력 하락 결과를 막고 아이템이 제거됨.", "tag": "장비"}, {"id": "conv_item_06", "name": "진통제 \"할부결제\"", "price": 1, "desc": "\"어떤 고통도, 내일의 나와 모레의 내가 힘을 합쳐 나눠가지면 덜할걸요?\"라는 문구의 진통제. 의외로 성분은 평범하다.", "effect_text": "정신력+1, 부정적 특성이 있을 경우 치료됨.", "tag": "회복"}]</script>
+<script type="text/plain" id="embeddedPrologue">모월 모일의 밤
+
+이곳은 온갖 낭설과 도시전설, 기담항설이 질서 없이 널브러진 도시.
+누군가는 이 도시에서 살아남으려 발버둥치고, 누군가는 이곳을 떠나기 위해 발버둥친다.
+또 누군가는 아무렇지도 않게 오늘을 살아간다.
+이 도시의 아래에서 어떤 끔찍한 저주가 꿈틀거리는지도 모른 채로.
+
+끈적한 더위가 어둠 사이로 내려앉은 모월 모일의 밤.
+방학을 맞이한 (playername)은/는 늦은 심야까지 밤거리를 쏘다니다가, 지쳐 귀가하던 길이었다.
+
+그리고 하필이면—
+하필이면 그 밤에, ‘저주의 구덩이’와 마주하고 말았다.
+
+분명 아는 길로 돌아가고 있었을 텐데, 길을 잃은 것이 이상했다.
+끈적한 더위 속에서 울어야 할 풀벌레 소리도, 쓰르름하던 그 울음도 뚝 끊겼다.
+
+먼 곳에서 울려 퍼지는, 낮고 높은 음울한 비명.
+아주 많은 사람들이 한꺼번에 내지르는 것 같은 비명이었다.
+
+이상함을 느껴 뒤를 돌아본 (playername)의 눈앞에는
+거대한—살덩어리로 만들어진 기괴한 구멍이 있었다.
+
+그 구멍은, 숨을 쉬는 듯했다.
+
+한 번 숨을 들이쉴 때마다 악의로 가득한 사념들이 마구 쏟아져 나왔다.
+의식이 혼탁해지고, 눈이 뒤집히는 느낌.
+정신이 꺼지려 할 때마다 주변의 싸늘한 한기가 이성을 억지로 붙잡아 깨웠다.
+
+공포심에 정신이 비틀려 갈 무렵,
+마침내 (playername)는 구덩이의 의지를 듣기 시작했다.
+
+ㅇ 구덩이의 의지를 듣는다.
+
+깊은 곳에서 흐느끼는 자는 자신을 나락의 왕이라 일컫었다.
+나락의 왕은 뜨끈하고 흉측한 숨결을 내뿜으며, 당신에게 저주를 내렸다.
+
+다시금 그의 소름끼치는 괴전파를 떠올리자 정신이 풀려나갈 것만 같았다.
+하지만—육벽에 둘러싸여 끝없이 추락하는 지옥에 갇힐 수는 없었다.
+
+찬찬히, 해야 할 일을 정리한다.
+
+왼쪽 손목에 감긴 13개의 고리 모양 저주 표식이 욱신거렸다.
+
+남은 시간만큼 옭아매여진 의 저주의 증표. 13일의 기한.
+
+부둣가.
+폐허가 된 구 도심.
+실종자가 끊이지 않는 거대한 숲.
+심령스팟으로 유명한 인형의 섬.
+
+네 곳에 있는 어떠한 ‘영적 힘이 담긴 물건’을 찾아 올 것. 
+실패하면 영원히 추락을 반복하며 구덩이의 일부분이 된다.
+
+떨리는 다리를 부여잡고 다시 걸으니 집으로 돌아올 수 있었다.
+
+ㅇ휴식한다.
+
+날이 밝았다.
+
+D-13
+
+어디부터 조사를 시작할까? (선택한 지역에서 3일을 보낸다.)
+
+ㅇ 부둣가
+ㅇ 폐허가 된 구 도심
+ㅇ 실종자가 많은 거대한 숲
+ㅇ 심령 스팟으로 유명한 인형의 섬</script>
+<script type="text/plain" id="embeddedDock">[EVT_DOCK_00] 부둣가 지역 입장
+
+ㅇ부둣가
+
+"바다에서 기어나오는 부정한 것들은.. 뭍에서 보이는 괴이들보다도 더 끈적이고 질척한 원한을 가지고 있지...
+그래서 뱃사람들은 늘 기도하는 마음으로 바다를 바라보며, 바다로 나아간단다.
+소금기가 가득한 바람이 불어온다면, 최대한 육지에 가까운 방향으로 달리려므나.
+그들이 원한을 가지고 찾아온다면, 
+네 육신은 물론이고 영혼까지 시꺼멓게 칠해진 어두운 심연의 바다로 끌고 들어갈테니 말이다."
+
+....비릿하고 짠내나는 공기가 폐를 가득 채웠다. 부둣하게 도착했다.
+
+[EVT_DOCK_01] 집단폐사
+
+지역: 부둣가
+
+우선도: 자주 4
+
+시간대: 낮 / 밤 / 심야 모두 등장 가능
+
+본문(2~6문장): 방파제 근처에서 먼 바다를 바라보고 있으니 비릿하고 역한 냄새가 코끝을 타고 밀려들어온다. 순간 느껴지는 불쾌한 냄새에 당신은 인상을 한껏 찌푸린다. 멀지 않은 갯바위 근처에 하얀 실타래 같은 것들이 꿈틀거리고 있었다. 순간적으로 정신이 아득해지며 오싹하다. 혹시나 하는 마음에 당신은 갯바위 근처로 다가간다. 다가갈 수록 불쾌한 냄새가 위험을 알리는 듯 더욱 진하게 썩은 향을 풍겨온다. 
+
+정어리.
+멀리서 하얀 실로 보이던 것은 수백마리 정어리 떼가 갯바위에 올라 집단으로 몸을 뒤틀며 꿈틀거리는 것이었다.
+반찬으로 올라오던 때 보던 것과는 달리 기괴하다.
+
+ㅇ곰곰히 생각해본다.
+ㅇ자세히 살펴본다.
+
+선택지 A) 곰곰히 생각해본다.
+
+판정: 정신력
+
+난이도: 보통
+
+성공 시: 예전에 읽었던 신문 기사 내용이 생각났다. 
+개체수가 늘어나고 있는 정어리가 대지진의 전조로 집단폐사하고 있다는 내용이었다. 
+당신은 이 자리를 떠나기로 했다.
+
+> 아무 일도 일어나지 않았다.
+
+실패 시: 아무리 생각해봐도 기억이 잘 나지 않는다. 살아서 썩어들어가는 죽음의 냄새 때문에 집중할 수 없었던 탓도 있다. 두통이 찾아와 당신을 괴롭히기 시작했다. 당신은 괜한 일에 신경쓰지 않고, 더 중요한 일에 신경써야 겠다고 생각했다.
+
+> '미미한 두통' 특성을 얻었다. (다음 이벤트 선택지에서 정신력 판정 난이도가 조금 증가함. 이후에 특성 사라짐.)
+
+선택지 B) 자세히 살펴본다.
+
+판정: 영력
+
+난이도: 어려움
+
+성공 시: 고약한 냄새와 끔찍한 광경이 당신의 절박한 마음을 막을 수는 없었다. 
+그리고 아주 미약하게나마 있던 직감 비슷한 것이 이 광경을 그냥 지나칠 수 없다고 속삭이는 것만 같았다. 
+산 채로 펄떡거리며 썩어가던 정어리들에게는 공통적으로 배 쪽에 새끼손가락 만한 구멍이 나 있었다.
+마치 정어리에 또다른 눈이 새겨진 듯 한 느낌이 들었다. 
+이 모든 정어리를 한 마리씩 갉아놓는다는 것은 그냥 있을 수 일이 아니다.
+
+> 단서 '정어리 떼를 꿰뚫은 구멍(CLUE_DOCK_01)' 기억함.
+
+실패 시: 고약한 냄새와 끔찍한 광경이 당신의 절박한 마음을 막을 수는 없었다. 
+그리고 아주 미약하게나마 있던 직감 비슷한 것이 이 광경을 그냥 지나칠 수 없다고 속삭이는 것만 같았다. 
+하지만, 직감은 직감이고, 눈을 뜨지 못할 정도의 냄새와 기운을 감당할 수 없었던 당신은 더 이상 갯바위로 다가갈 수 없었다. 
+
+> 정신력-1
+
+[EVT_DOCK_02] 빈 배의 등불
+
+지역: 부둣가
+
+우선도: 보통 3
+
+시간대: 밤 / 심야 등장 가능
+
+본문(2~6문장): 깊은 밤 저 너머, 하늘과 바다가 구분되지 않는 캄캄한 어둠 속에서 
+등불 하나에 의지한 채 떠내려오고 있는 조각배가 떠내려온다. 
+배와 함께 인영이 보인다. 
+분명 야간 조업은 금지되어 있을텐데.
+
+"어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?"
+
+노인의 목소리와 함께 길다란 밧줄이 날아온다. 
+
+ㅇ밧줄을 잡아든다.
+ㅇ가만히 바라본다.
+
+선택지 A) 밧줄을 잡아든다.
+
+판정: 체력
+
+난이도: 지옥
+
+성공 시: 날아오는 밧줄을 한 손으로 낚아채고, 곧바로 눈 앞에 있던 말뚝에 휘감아 묶었다. 
+당신의 완벽한 솜씨에 감탄하며 노인은 박수를 치며 배를 이끌어 가만히 다가왔다. 
+늙은 어부는 썩어가는 손으로 배에 달린 등불을 건넨다.
+당신은 등불을 받고, 꾸벅 감사의 인사를 건넸다.
+
+> item 아귀초롱 획득. (밤/심야 이벤트에서 영력 판정 시 성공 확률 15% 증가함.)
+
+실패 시: 날아오는 밧줄을 놓쳤다. 
+뒤늦게 잡으려 몸을 숙이고 앞으로 내밀어보니, 등불에 비친 노인의 모습이 뭔가 이상하다. 
+땅에 떨어진 밧줄을 붙잡으려고 하다가 이상한 기분에 눈을 들어 보니 노인은 이미 썩어들어가고 있는 모습이었다.
+등불 아래로 바다 아래가 희미하게 보였다. 거대한 물고기와 눈이 마주쳤다.
+
+당신은 눈이 마주 친 순간 뒤도 돌아보지 않고 달아났다. 물고기의 희끄무리한 동공이 잊혀지지 않는다.
+
+> 정신력-1
+
+거리가 멀어질 수록 노인의 시체가 의지없이 말하는 목소리가 점점 희미해진다.
+"어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?"
+
+선택지 B) 가만히 바라본다.
+
+판정: 영력
+
+난이도: 보통
+
+성공 시: 당신은 먼 발치에서부터 떠내려오는 조각배를 가만히 바라본다. 
+노인의 어색한 움직임도, 수면 아래에 커다란 그림자도 보이기 시작한다. 
+본래 이 세상의 것들이 아닌 것임을 인지할 수 있게 되었다.
+어둠 속에서 빛으로 사냥감을 유인하는 거대한 포식자. 
+당신은 엮이면 좋을 것이 없다고 생각해, 즉시 자리를 떠났다. 
+판단력이 성장함을 느꼈다.
+
+>영력+1
+
+실패 시: 당신은 먼 발치에서부터 떠내려오는 조각배를 가만히 바라본다. 
+배가 가까이 다가오는 동안 노인은 계속 같은 말을 반복한다. 
+
+"어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?어이, 오늘은 제법 생선이 잡혔다고! 미안하지만 거기 어딘가에 배를 묶어주지 않겠나?"
+
+당신은 이 곳을 떠났다. 
+
+> 아무 일도 일어나지 않았다.
+
+[EVT_DOCK_03] 물안개 속 노점상
+
+지역: 부둣가
+
+우선도: 희귀 2
+
+시간대:  낮 / 밤 / 심야 모두 등장 가능.
+
+본문(2~6문장): 조금 걷고 있으니 주변이 희뿌연 물안개로 점점 흐려져간다. 
+안개 저 편 너머로 누군가 앉아있는 그림자가 보인다. 
+"히히, 여길 찾아오다니, 운이 좋구만. 자, 뭔가 살텐가?"
+번들거리는 피부를 가진 자는 좌판에 깔린 두 가지 물건을 내보이며 손을 내밀었다.
+어쩐지 조금 비린내가 난다.
+
+ㅇ낡은 카세트 테이프를 선택한다. (소지금-2)
+ㅇ소금 한 줌이 담긴 주머니를 선택한다. (소지금-1)
+ㅇ통조림을 선택한다. (소지금-2)
+
+선택지 A) 낡은 카세트 테이프를 선택한다.
+
+판정: 소지금 2원 이상일 시 무조건 성공
+
+난이도: 없음
+
+성공 시: 낡은 카세트 테이프를 획득했다. (낡고 너덜너덜해진 카세트 테이프. 휴대용 카세트 테이프 플레이어가 있어야 무엇이 녹음되어있는 지 확인할 수 있을 것 같다.) 소지금 -2
+
+실패 시: 소지금이 부족하다.
+
+선택지 B) 소금 한 줌이 담긴 주머니를 선택한다.
+
+판정: 소지금 1원 이상일 시 무조건 성공
+
+난이도: 없음
+
+성공 시: 소금 주머니를 획득했다. (정화된 소금 한 줌. 부정적인 특성을 획득할 때, 단 한 번 막아준다. 저주를 막으면 소금은 검게 썩어 더는 사용할 수 없게 된다.)
+
+실패 시: 소지금이 부족하다.
+
+선택지 C) 통조림을 선택한다.
+
+판정: 소지금 2원 이상일 시 무조건 성공
+
+난이도: 없음
+
+성공 시: 육고기가 가공되어있는 통조림을 뜯어 허기를 채운다. 
+아는 맛에서 오는 편안함과 익숙함에 감사함이 느껴진다. 활력이 차올라, 다시금 움직일 힘이 되었다. (체력+1 정신력+1)
+
+실패 시: 소지금이 부족하다. 
+
+[EVT_DOCK_04] 바닷바람에 퍼지는 조종(죽음을 애도하는 종소리)
+
+지역: 부둣가
+
+우선도: 보통 3
+
+시간대: 밤 / 심야 등장 가능
+
+본문:  앞을 분간할 수 없을 정도로 짙은 해무가 몰려온다. 
+시야가 차단된 어둠 속에서, 바다 저 멀리 맑은 종소리가 울려 퍼진다. 등대도 없는 방향이다. 
+종소리는 규칙적이지만, 
+들릴 때마다 심장이 조여드는 불길한 압박감이 느껴진다.
+
+ㅇ종소리 횟수를 센다.
+ㅇ귀를 막고 눈을 감아 소리를 거부한다.
+
+선택지 A) 종소리 횟수를 센다.
+
+판정: 정신력
+
+난이도: 어려움
+
+성공 시: 종소리는 정확히 아홉 번 울려퍼진 뒤 멈췄다. 
+아홉. 아홉 수, 10이 되지 못한 수, 미완성의 수. 누군가의 죽음으로 이 장송의 종소리가 마무리되는걸까.
+마지막 종소리의 주인은 당신이 될 수도, 다른 누군가가 될 수도 있다는 사실을 되새고 있으니, 해무는 걷혀졌다.
+
+> 정신력 +1
+
+실패 시: 종소리를 셀수록 머릿속이 엉망이 된다. 
+마지막 아홉 번째 종소리가 당신의 귓가 바로 옆에서 울리는 듯한 환청이 들리며 코피가 쏟아진다.
+
+> 정신력 -1
+
+선택지 B) 귀를 막고 눈을 감아 소리를 거부한다.
+
+판정: 정신력
+
+난이도: 보통
+
+성공 시: 당신은 두 손으로 귀를 강하게 압박하며 눈을 감았다. 
+바다 너머에서 들려오는 기분 나쁜 소리를 거부하고, 오직 자신의 거친 숨소리와 심장 박동에만 집중했다. 
+잠시 후, 살을 에던 축축한 한기가 물러가고 고요가 찾아왔다. 
+눈을 뜨자 안개는 어느덧 옅어져 있었고, 당신은 심연의 유혹으로부터 자신을 지켜내는 데 성공했다.
+
+> 아무 일도 일어나지 않았다.
+
+실패 시: 귀를 틀어막았음에도 불구하고, 종소리는 고막이 아닌 머릿속 뼈를 직접 울리며 파고든다. 
+거부하면 할수록 종소리는 더욱 날카로운 비명처럼 변해 당신의 정신을 헤집어 놓는다. 
+심장이 종소리의 박자에 맞춰 기괴하게 요동치기 시작하고, 당신은 밀려오는 구역질을 참지 못한 채 바닥을 굴렀다. 
+소리가 멈춘 뒤에도 고통스러운 이명이 한동안 당신을 괴롭힌다.
+
+>정신력 -1
+
+[EVT_DOCK_05] 파도에 부숴진 등대
+
+지역: 부둣가
+
+우선도: 보통 3
+
+시간대: 밤 / 심야
+
+본문: 오래전 버려진 듯한 낡은 등대가 홀로 바다를 떠난 이들을 기다리며 서 있다. 
+문은 녹슬어 굳게 닫혀 있고, 등대 꼭대기에서는 아무런 으스스한 빛이 깜빡인다. 
+등대 내부에서 소름끼치는 비명소리와 함께 누군가 벽을 치는 듯한 소리가 규칙적으로 들려온다.
+
+ㅇ강제로 문을 열고 들어간다.
+ㅇ등대 안에 누가 있는지 문을 두드리며 말을 걸어본다.
+
+선택지 A) 강제로 문을 열고 들어간다.
+
+판정: 체력
+
+난이도: 어려움
+
+성공 시: 낡은 경첩이 비명을 지르며 문이 강제로 열린다.
+커다란 파열음이 울렸지만, 아무도 그 소리에 놀라지 않았다.
+등대는 텅 비어있기 때문이다. 
+당신은 아무도 없는 등대에서 등대지기의 소지품이었던 것을 발견한다.
+
+> item 휴대용 카세트 테이프 플레이어 획득. (낡은 카세트 테이프가 있을 시, 두 아이템이 합쳐져, '증언'이라는 아이템으로 변경됨.)
+
+실패 시: 강제로 문을 열기 위해 안간 힘을 써대던 당신은 잠긴 문을 열 수 없다는 사실을 깨달았다.
+밤바다의 습기와 땀으로 인해 불쾌감이 배가 되었다.
+짜증으로 문을 발로 차보았으나, 튀어나온 녹슨 못이 신발 밑창 깊숙한 곳을 찔렀다.
+
+> 체력 -1 , '파상풍' 특성을 얻었다. (다음 이벤트 선택지에서 체력 판정 난이도가 조금 증가함. 이후에 특성 사라짐.)
+
+선택지 B) 등대 안에 누가 있는지 문을 두드리며 말을 걸어본다.
+
+판정: 영력
+
+난이도: 보통
+
+성공 시: 문을 열고 나온 것은 초췌한 모습이 되기 전까지 자랑스러운 바다 사나이였을 모습의 등대지기였다.
+이마에는 벽에 부딪힌 상처가 보였지만, 눈빛은 불타는 것과도 같았다. 
+그는 이글거리는 눈빛으로 당신에게 헤진 노트 한 권을 안겨주었다.
+"바다는..우리는 잊지 않는다... 그러니, 너도 기억해다오... "
+
+> 단서 '등대지기의 일지' 획득 
+
+실패 시: 당신이 등대 문 앞에서 인기척을 내며 누군가 있는지 묻자, 
+모든 소리도, 빛도 멈추어버렸다.
+당신이 허둥지둥하는 사이, 어둠속에서 누군가 당신의 어깨를 잡고 귀에다가 대고 속삭였다.
+"당장 여기서 꺼져. 꺼져, 꺼져! 꺼지라고! 안들려? 꺼져!"
+
+대답할 새도 없이 몇 번이고 축객령을 당한 당신은 뒤도 돌아보지 않고 등대에서 먼 곳까지 달렸다.
+
+> 정신력 -1 '패닉'특성을 얻었다. (다음 이벤트 선택지에서 모든 판정 난이도가 조금 증가함.)
+
+[EVT_DOCK_06] 해안선의 소식통
+
+지역: 부둣가
+
+우선도: 자주 4
+
+시간대: 낮
+
+본문:  해안선을 따라 걷고있자니, 어딘가에서 쑥덕거리는 이야기가 들려온다.
+을씨년스러운 부둣가의 분위기와 맞지 않는 수다스러운 말소리에 이끌려 다가가니, 
+몇사람의 여성이 모여 뭔가를 먹으며 담소를 나누고 있다.
+
+"아니 글쎄... 그렇더라니까?"
+"진짜? 참나, 그게 말이 되냐고. 하여간...."
+"그러게 내가 처음부터 그럴 줄 알았다니까. 딱 봐도 눈빛이 이상했잖아!"
+
+ㅇ숨어서 이야기를 훔쳐듣는다.
+ㅇ넉살좋게 이야기에 끼어들어본다.
+
+선택지 A) 숨어서 이야기를 훔쳐듣는다.
+
+판정: 민첩
+
+난이도: 보통
+
+성공 시: 당신은 조금 더 바싹 몸을 숙이고, 
+귀를 기울여 그녀들이 무슨 이야기를 하는지 주의깊게 들어보았다.
+"그래서 그믐달 밤에 다 삭아빠진 비늘로.... "
+모든 이야기를 이해하지는 못했으나, 이 부둣가 마을에서 불길하고 불완전한 의식이 있다는 사실을 알게 되었다.
+
+> 영력+1, 단서 '그믐달 밤의 의식(CLUE_DOCK_02)' 기억함.
+
+실패 시: 이야기가 한창이던 때, 당신의 발소리를 눈치챈 이들이 
+약속이라도 한 듯 동시에 말을 멈추고 당신을 노려본다.
+"너 누구야?"
+그제서야 당신은 그녀들이 하하호호 웃으며 먹고 있던 것이 시체임을 깨닫는다.
+
+선택지 B) 넉살좋게 이야기에 끼어들어본다.
+
+판정: 영력
+
+난이도: 어려움
+
+성공 시: "어머, 얘좀 봐. 겁도 없는 아이로구나?"
+"겁이 없지만 그래도 마음에 드는데?"
+"무슨 얘기를 듣고 싶은지는 모르겠지만, 네가 듣기에 좋지는 않을걸? 호호호!"
+
+그녀들은 오손도손 뜯던 시체의 주머니를 뒤지더니, 이야기값의 대신이라고 하며 당신에게 돈을 건낸다. 
+거절할 용기가 있다면, 손을 내밀어 받는 용기를 내는 것이 나을 것이다.
+
+>소지금 3 획득
+
+실패 시: 당신의 말주변이 서툴었다기 보다는, 영적인 존재감이 그녀들에게 달갑지 않았던 탓이리라.
+그녀들은 곧바로 입주변에 피칠갑을 한 채로 당신에게 달려들었고,
+당신은 죽을 힘을 다해 달리며, 온몸에 생채기가 난 채 가까스로 사냥당할 위기에서 도망칠 수 있었다.
+
+> 체력 -1
+
+[EVT_DOCK_07] 해안동굴
+
+지역: 부둣가
+
+우선도: 보통 3
+
+시간대: 낮 / 밤
+
+본문: 해안 절벽 아래, 파도로 깎여나간 동굴의 입구가 보인다. 동굴 안쪽으로는 들이친 물보라로 인해 습기를 머금고 있어 서늘한 기운이 서려있다. 
+당신은 스산한 바닷바람을 헤치고 해안동굴로 가는 외길을 지나 동굴 앞에 멈춰섰다.
+
+ㅇ동굴 안쪽을 살펴본다.
+
+선택지 A) 동굴 안쪽을 살펴본다.
+
+판정: 영력
+
+난이도: 보통
+
+성공 시: 어둠 속에서 푸르게 빛나는 이끼들이 동굴 벽면을 타고 번식하고 있다. 
+당신은 동굴 바닥에 흩어진 기이한 형태의 뼛조각들을 발견할 수 있었다.
+뼛조각의 주변에서는 삭아버린 유류품들과 함께 조금의 돈을 발견할 수 있었다.
+금전을 조금 챙긴 당신은 주변의 모래와 돌을 이용해 유골을 덮은 뒤, 합장으로 그의 명복을 빌어주었다.
+
+> 소지금 2 획득
+
+실패 시: 어둠 속에서 푸르게 빛나는 이끼들이 동굴 벽면을 타고 번식하고 있다. 
+당신은 동굴 바닥에 흩어진 기이한 형태의 뼛조각들을 발견할 수 있었다.
+뼛조각을 본 당신은 급히 달려 동굴을 빠져나왔다. 
+
+> 아무일도 일어나지 않았다.
+
+[EVT_DOCK_08] 소금기로 썩어버린 집
+
+지역: 부둣가
+
+우선도: 희귀 2
+
+시간대: 낮 / 밤 / 심야 모두 등장 가능
+
+본문: 바닷바람을 정면으로 맞는 언덕 위, 소금기에 절여져 허얗게 탈색된 폐가가 쓰러지기 직전의 모습으로 있다. 
+나무 기둥은 썩어 문드러졌고, 지붕은 반쯤 내려앉은 상태이다. 
+집 주변에는 말라 죽은 나무들이 마치 하늘을 향해 손가락질 하는 듯 원망스럽게 하늘을 향해 뻗어 있다.
+
+ㅇ 집 안을 조사해본다.
+
+선택지 A) 집 안을 조사해본다.
+
+판정: 민첩
+
+난이도: 보통
+
+성공 시: 당신은 무너져내리는 집안을 기민하게 움직여가며 조심스럽게 둘러보기 시작했다. 가장 밝고 건조했던 2층의 방 한 구석에서 서랍 위에 얹혀진 작은 인형을 발견했다. 인형을 집어들자 바닥이 무너져내리기 시작했고, 당신은 민첩하게 창문쪽으로 빠져나왔다.
+인형으로 보였던 것은 인어 유체의 썩어가는 사체였고, 온 몸의 군데군데에서 무엇인가 뽑혀나간 흔적이 보였다. 
+
+> 단서 '비늘 돋은자의 마지막 흔적(CLUE_DOCK_03)' 을 획득했다. (마지막 인어 유생의 사체. 몸 군데군데 돋아난 비늘이 최근에 뽑힌듯 한 모습이다. 최종보스전에 돌입하면 선택지 1회를 강제 성공.)
+
+실패 시: 당신은 무너져내리는 집안을 기민하게 움직여가며 조심스럽게 둘러보기 시작했다. 가장 밝고 건조했던 2층의 방 한 구석에서 서랍 위에 얹혀진 작은 인형을 발견했다. 인형을 집어들자 바닥이 무너져내리기 시작했고, 당신은 꺼지는 바닥으로 떨어지며 인형을 잃어버리고 말았다. 
+
+> 체력 -1
+
+[EVT_DOCK_09] 곶 위로 튀어나온 손
+
+지역: 부둣가
+
+우선도: 자주 4
+
+시간대: 낮 / 밤 / 심야 모두 등장 가능
+
+본문: 가까운 연안 바다에서 주먹을 쥔 거대한 손이 물보라를 일으키며 나타났다.
+오랜 시간 바닷속에 잠겨 있었던 탓인지, 손가락 틈새로는 따개비들이 다닥다닥 붙어있었다.
+이윽고, 패각류가 떨어지는 시끄러운 소리와 함께 손이 펴지더니, 손바닥 안에 소중히 쥐고 있던 것이 드러났다.
+거대한 손은 손바닥을 해안가로 내밀어 당신에게 권했다.
+
+ㅇ 손을 내밀어 받는다.
+
+선택지 A) 손을 내밀어 받는다.
+
+판정: 없음
+
+난이도: 없음. 무조건 성공
+
+성공 시: 거대한 손으로부터 건네받은 것은 주먹만한 알과, 스푼이었다. 
+당신은 영문을 알 수 없어 그저 감사를 표하려 했으나, 거대한 존재는 재차 권하듯 손바닥을 연신 내밀었다.
+한 손에는 알을, 다른 손에는 스푼을 들고 알을 내리쳐 보니 
+알 속에는 부리와 지느러미, 아가미, 다섯 손가락을 가진 생물이 당신을 바라보고 있었다. 
+
+눈을 꼭 감고 알 속의 생물을 식도로 넘겼다.
+삼키는 순간, 바닷물 같은 청량하고 짭짤한 숨이 폐로 가득 차오르다가 이내 빠져나갔다.
+놀라우리만치 활력이 솟고 정신이 번쩍 드는 기분이었다.
+
+> 체력+1 정신+1
+
+[EVT_DOCK_10] 얽혀오는 머리카락
+
+지역: 부둣가
+
+우선도: 보통 3
+
+시간대: 낮 / 밤 / 심야 모두 등장 가능
+
+본문: 방파제 끝, 테트라포드로 건너가 주변을 둘러보고 있던 도중, 
+무언가 둔탁한 것이 당신의 등을 강한 힘으로 걷어찼다.
+비명을 지를 새도 없이 당신은 위험한 물살 굽이 사이의 바다로 추락해 버렸고, 
+차갑고 새카만 바닷물에 잠겨 허우적거리는 것 말고는 할 수 있는 일이 없었다. 
+끈적한 해초가 수면 아래에서 당신의 다리를 감싸쥐고 놓아주지 않는다.
+
+ㅇ 침착하게 바지를 끌러 탈출한다.
+
+선택지 A) 침착하게 바지를 끌러 탈출한다.
+
+판정: 체력
+
+난이도:  보통
+
+성공 시: 거대한 압박감과 질식에 대한 공포, 차갑고 거센 물살로 인해 몸이 굳어왔지만, 당신은 몇 번의 시도로 바지춤을 끌러 벗어낼 수 있었고, 엉겨오는 해초를 뒤로 한 채 간신히 테트라포드 위로 올라올 수 있었다. 잠시 숨을 고르고 당신의 몸을 휘감았던 것들을 떼어내려고 보니, 그것은 해초가 아닌 검은 머리카락뭉치였다. 
+당신을 밀쳤던 존재는 흔적도 없이 사라졌다.
+
+> 아무일도 일어나지 않았다.
+
+실패 시: 해초는 점점 더 당신의 온 몸을 휘감아오고, 당신은 물속에서 해초라고 생각했던 것의 실체와 마주하게 된다. 새빨간 눈을 하고 원망으로 당신을 저주하는 긴 머리카락의 귀신이 더더욱 당신을 휘감는다.
+너무나 강렬한 감정과 숨이 막혀오는 상황을 더는 견딜 수 없어 당신은 눈을 감는다.
+
+잠시 정신을 차리니 파도에 떠밀려 모래사장으로 토해지듯 뱉어졌으나, 몸 안 깊숙한 곳에서 여전히 무언가 꿈틀거리는 기분이 가시지 않았다.
+
+> 체력-1 정신-1
+
+
+
+
+-----------------------------이 이후 3일차 밤(보스전 대비 보급) > 보스전(3턴)-----------------------
+
+[EVT_DOCK_SUPPLYMENT] 심야의 편의점
+
+지역: 부둣가
+
+우선도: 강제
+
+시간대:  3일차의 밤에만 등장.
+
+본문: 지친 몸과 허기를 달래줄 얼마 되지 않는, 이 곳에서 친절한 편의점이다.
+간판의 불이 힘없이 점멸하지만, 문을 열고 들어가면 불친절한 직원이 반겨주지만, 
+이 곳에 머무르는 것 만으로도 안전하다는 느낌을 받는다. 
+"어서오세요."
+어째서인지 1초 전에 얼굴을 보고 지나쳤는데도 점원의 얼굴이 기억나지 않는다.
+
+ㅇSHOP_POOL item을 구매한다. (소지금 -)
+ㅇSHOP_POOL item을 구매한다. (소지금 -)
+ㅇSHOP_POOL item을 구매한다. (소지금 -)
+
+
+
+[EVT_DOCK_BOSS] 
+
+지역: 부둣가
+
+우선도: 강제
+
+시간대: 3일차의 심야에만 등장.
+
+본문:</script>
+
+<script>
+(() => {
+  // ===== Utilities =====
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const escapeHTML = (s) => (s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  const fmt = (s) => escapeHTML(s).replace(/\n/g, "<br>");
+  const $ = (q) => document.querySelector(q);
+  const $$ = (q) => Array.from(document.querySelectorAll(q));
+
+  // ===== Config: 판정 확률 =====
+  // 기본 45% + (스탯 * 5) - 난이도 보정. (수치는 언제든 여기서 조절)
+  const BASE = 45;
+  const STAT_STEP = 5;
+  const DIFF_MOD = {
+    "없음": 0,
+    "쉬움": 10,
+    "보통": 20,
+    "어려움": 30,
+    "지옥": 45
+  };
+
+  const TIME_LABELS = ["낮","밤","심야"];
+  const REGION_NAMES = {
+    "DOCK":"부둣가",
+    "OLD_CITY":"폐허가 된 구 도심",
+    "FOREST":"실종자가 많은 거대한 숲",
+    "DOLL_ISLAND":"심령 스팟으로 유명한 인형의 섬",
+  };
+
+  // ===== Game State =====
+  const initialState = () => ({
+    scene: "TITLE",
+    playerName: "",
+    job: "학생",
+    // stats
+    maxHp: 5, hp: 5,
+    san: 4,
+    agi: 3,
+    spr: 1,
+    money: 2,
+    daysRemaining: 13,
+    // collections
+    passive: [],
+    items: [],
+    clues: [],
+    traits: [],
+    // meta
+    region: null,
+    regionDay: 0,
+    timeIndex: 0,
+    dockDrawnEventIds: [],
+    dockRemainingEventIds: [],
+    snapshot: null,
+    rewindUsedByRegion: {},
+    shopOffers: {},
+    purchased: {}, // store item purchases
+    rngSeed: Math.floor(Math.random()*1e9)
+  });
+
+  let S = initialState();
+
+  // RNG: deterministic-ish per run (simple LCG)
+  function rng() {
+    // LCG (Numerical Recipes)
+    S.rngSeed = (S.rngSeed * 1664525 + 1013904223) >>> 0;
+    return S.rngSeed / 4294967296;
+  }
+  function roll100() {
+    return Math.floor(rng() * 100) + 1; // 1..100
+  }
+
+  // ===== Parse embedded data =====
+  const PROLOGUE_RAW = $("#embeddedPrologue").textContent.replace(/\r/g,"").trim();
+  const DOCK_RAW = $("#embeddedDock").textContent.replace(/\r/g,"").trim();
+  const STORE_ITEMS = JSON.parse($("#embeddedStoreItems").textContent);
+
+  function parseBlocks(rawText) {
+    const indices = [];
+    const re = /\[EVT_[A-Z0-9_]+\]/g;
+    let m;
+    while ((m = re.exec(rawText)) !== null) {
+      indices.push({ idx: m.index });
+    }
+    if (indices.length === 0) return [];
+    const blocks = [];
+    for (let i=0;i<indices.length;i++) {
+      const start = indices[i].idx;
+      const end = (i+1 < indices.length) ? indices[i+1].idx : rawText.length;
+      blocks.push(rawText.slice(start, end).trim());
+    }
+    return blocks;
+  }
+
+  function parsePriority(line) {
+    // "우선도: 자주 4" or "우선도: 희귀 2"
+    const m = line.match(/우선도\s*:\s*([가-힣]+)\s*(\d+)?/);
+    if (!m) return 3;
+    const n = parseInt(m[2]||"3",10);
+    return clamp(n,1,5);
+  }
+
+  function parseTimeWindow(block) {
+    // 시간대: 낮 / 밤 / 심야 ... or "낮" only etc.
+    const m = block.match(/시간대\s*:\s*([^\n]+)/);
+    if (!m) return { allowed: new Set(TIME_LABELS) };
+    const t = m[1];
+    const set = new Set();
+    if (t.includes("낮")) set.add("낮");
+    if (t.includes("밤")) set.add("밤");
+    if (t.includes("심야")) set.add("심야");
+    if (set.size === 0) TIME_LABELS.forEach(x=>set.add(x));
+    return { allowed: set };
+  }
+
+  function parseEvent(block) {
+    const firstLine = block.split("\n")[0];
+    const head = firstLine.match(/^\[(EVT_[A-Z0-9_]+)\]\s*(.*)$/);
+    const id = head ? head[1] : "EVT_UNKNOWN";
+    const title = head ? head[2].trim() : "알 수 없는 사건";
+
+    // special: entry has no formal structure
+    const isEntry = id === "EVT_DOCK_00";
+    const isShop = id === "EVT_DOCK_SUPPLYMENT";
+    const isBoss = id === "EVT_DOCK_BOSS";
+
+    // region
+    const regionMatch = block.match(/지역\s*:\s*([^\n]+)/);
+    const region = regionMatch ? regionMatch[1].trim() : "부둣가";
+
+    // priority
+    const prLine = (block.match(/우선도\s*:\s*[^\n]+/)||[""])[0];
+    const priority = parsePriority(prLine);
+
+    // time window
+    const {allowed} = parseTimeWindow(block);
+
+    // body: after "본문" line until first "ㅇ" or "선택지"
+    let body = "";
+    const bodyMatch = block.match(/본문[^\n]*:\s*([\s\S]*?)(?=\n\s*ㅇ|\n\s*선택지|$)/);
+    if (bodyMatch) body = bodyMatch[1].trim();
+    else {
+      // some blocks use "본문:" without colon patterns; fallback: take lines after "본문" or after header
+      const m2 = block.match(/본문\s*:\s*([\s\S]*)/);
+      body = m2 ? m2[1].trim() : block.split("\n").slice(1).join("\n").trim();
+    }
+
+    // choice bullets (ㅇ ...)
+    const choiceBullets = [];
+    const bulletRe = /^\s*ㅇ\s*(.+?)\s*$/gm;
+    let bm;
+    while ((bm = bulletRe.exec(block)) !== null) {
+      const txt = bm[1].trim();
+      // ignore if it's the "ㅇ부둣가" line for entry; still use as continue button
+      choiceBullets.push(txt);
+    }
+
+    // choice sections
+    const sections = [];
+    const secRe = /선택지\s*([A-Z])\)\s*([^\n]+)\n([\s\S]*?)(?=\n\s*선택지\s*[A-Z]\)|$)/g;
+    let sm;
+    while ((sm = secRe.exec(block)) !== null) {
+      const letter = sm[1];
+      const secTitle = sm[2].trim();
+      const secBody = sm[3];
+
+      const judge = (secBody.match(/판정\s*:\s*([^\n]+)/)||["","없음"])[1].trim();
+      const diff = (secBody.match(/난이도\s*:\s*([^\n]+)/)||["","보통"])[1].trim();
+
+      const suc = (secBody.match(/성공\s*시\s*:\s*([\s\S]*?)(?=\n\s*실패\s*시\s*:|$)/)||["",""])[1].trim();
+      const fail = (secBody.match(/실패\s*시\s*:\s*([\s\S]*?)$/)||["",""])[1].trim();
+
+      sections.push({ letter, title: secTitle, judge, diff, successText: suc, failText: fail });
+    }
+
+    return {
+      id, title, region, priority,
+      allowedTimes: allowed,
+      body,
+      choiceBullets,
+      sections,
+      kind: isEntry ? "ENTRY" : (isShop ? "SHOP" : (isBoss ? "BOSS" : "EVENT"))
+    };
+  }
+
+  const dockBlocks = parseBlocks(DOCK_RAW);
+  const DOCK_EVENTS = dockBlocks.map(parseEvent);
+
+  function getEventById(id) {
+    return DOCK_EVENTS.find(e=>e.id===id);
+  }
+
+  // ===== Inventory helpers =====
+  function addPassive(name, desc) {
+    if (!S.passive.find(x=>x.name===name)) {
+      S.passive.push({name, desc});
+    }
+  }
+  function addItem(name, desc) {
+    if (!S.items.find(x=>x.name===name)) {
+      S.items.push({name, desc});
+    }
+  }
+  function addClue(name, desc) {
+    if (!S.clues.find(x=>x.name===name)) {
+      S.clues.push({name, desc});
+    }
+  }
+  function addTrait(name, desc) {
+    S.traits.push({name, desc});
+  }
+
+  function hasClue(key) {
+    return S.clues.some(c => (c.name.includes(key) || (c.desc||"").includes(key)));
+  }
+  function hasItem(namePart) {
+    return S.items.some(i => i.name.includes(namePart));
+  }
+  function hasPassive(namePart) {
+    return S.passive.some(p => p.name.includes(namePart));
+  }
+
+  // Student ID passive (기본 소지, 캐릭터 선택 후)
+  const STUDENT_ID = {
+    name: "학생증",
+    desc: "당신의 선택을 되돌릴 수 있습니다. 아직 학생일 때 까지는 말이죠.\n사회에 나가면 얄짤 없다는걸 기억해두세요.\n\n효과: 지역별 1회, 선택지 결과를 되돌려 재도전한다."
+  };
+
+  // ===== Stat changes parser =====
+  function applyEffectsFromText(text) {
+    // Only parse lines like > 체력+1 정신력-1 etc.
+    const lines = (text||"").split("\n").map(s=>s.trim()).filter(Boolean);
+    for (const line of lines) {
+      if (!line.startsWith(">")) continue;
+      const payload = line.replace(/^>\s*/,"").trim();
+
+      // 체력/정신/민첩/영력/소지금 changes
+      const statMap = [
+        {k:"체력", prop:"hp"},
+        {k:"정신력", prop:"san"},
+        {k:"민첩", prop:"agi"},
+        {k:"영력", prop:"spr"},
+      ];
+
+      // patterns like "체력+1 정신+1" (정신도 허용)
+      const norm = payload.replace("정신", "정신력");
+      for (const sm of statMap) {
+        const re = new RegExp(sm.k + "\\s*([+-])\\s*(\\d+)", "g");
+        let m;
+        while ((m = re.exec(norm)) !== null) {
+          const sign = m[1];
+          const n = parseInt(m[2],10);
+          const delta = (sign === "+") ? n : -n;
+          if (sm.prop === "hp") {
+            S.hp = clamp(S.hp + delta, 0, S.maxHp);
+          } else {
+            S[sm.prop] = clamp(S[sm.prop] + delta, 0, 99);
+          }
+        }
+      }
+
+      // 소지금: "-2" or "2 획득"
+      const moneyGain = payload.match(/소지금\s*(\d+)\s*획득/);
+      if (moneyGain) {
+        S.money = clamp(S.money + parseInt(moneyGain[1],10), 0, 999);
+      }
+      const moneyDelta = payload.match(/소지금\s*[-−]\s*(\d+)/);
+      if (moneyDelta) {
+        S.money = clamp(S.money - parseInt(moneyDelta[1],10), 0, 999);
+      }
+
+      // item / clue / trait (very light)
+      const itemM = payload.match(/item\s+(.+?)\s*획득/);
+      if (itemM) {
+        const nm = itemM[1].trim();
+        addPassive(nm, "이벤트로 획득한 소지 효과.");
+      }
+      const clueM = payload.match(/단서\s*['"]?(.+?)['"]?\s*.*(기억함|획득)/);
+      if (clueM) {
+        const nm = clueM[1].trim();
+        addClue(nm, "이벤트에서 기억한 단서.");
+      }
+      const traitM = payload.match(/'(.+?)'\s*특성/);
+      if (traitM) {
+        const nm = traitM[1].trim();
+        addTrait(nm, payload);
+      }
+    }
+  }
+
+  // ===== 판정 계산 =====
+  function normalizeDiff(s) {
+    s = (s||"보통").trim();
+    if (s.includes("없음")) return "없음";
+    if (s.includes("쉬움")) return "쉬움";
+    if (s.includes("보통")) return "보통";
+    if (s.includes("어려")) return "어려움";
+    if (s.includes("지옥")) return "지옥";
+    return "보통";
+  }
+  function getStatValueFromJudge(judge) {
+    judge = (judge||"").trim();
+    if (judge.includes("체력")) return { statKey:"hp", statLabel:"체력" };
+    if (judge.includes("정신")) return { statKey:"san", statLabel:"정신력" };
+    if (judge.includes("민첩")) return { statKey:"agi", statLabel:"민첩" };
+    if (judge.includes("영력") || judge.includes("영기") || judge.includes("영감")) return { statKey:"spr", statLabel:"영력" };
+    if (judge.includes("소지금")) return { statKey:"money", statLabel:"소지금" };
+    return { statKey:"spr", statLabel:"영력" };
+  }
+
+  function calcChance(judge, diff) {
+    // Special: money threshold auto
+    if (judge.includes("소지금") && judge.includes("이상")) {
+      const need = parseInt((judge.match(/소지금\s*(\d+)/)||["","0"])[1],10);
+      return { kind:"MONEY_THRESHOLD", need, chance: (S.money >= need ? 100 : 0) };
+    }
+    if (judge.includes("없음")) {
+      return { kind:"AUTO", chance: 100 };
+    }
+    const diffKey = normalizeDiff(diff);
+    const mod = DIFF_MOD[diffKey] ?? 20;
+    const {statKey, statLabel} = getStatValueFromJudge(judge);
+    const statVal = (statKey === "hp") ? S.hp : S[statKey];
+
+    // Passive: 아귀초롱 — night/deepnight spirit checks +15%
+    let passiveBonus = 0;
+    if ((diffKey !== "없음") && (statLabel==="영력") && (S.timeIndex>=1) && hasPassive("아귀초롱")) {
+      passiveBonus += 15;
+    }
+
+    // Trait: 패닉 - all checks harder (approx -10)
+    if (S.traits.some(t => t.name.includes("패닉"))) {
+      passiveBonus -= 10;
+    }
+
+    const chance = clamp(BASE + (statVal * STAT_STEP) - mod + passiveBonus, 5, 95);
+    return { kind:"ROLL", statLabel, statVal, diffKey, passiveBonus, chance };
+  }
+
+  // ===== Weighted sampling without replacement (priority) =====
+  function weightedPickOneNoReplace(candidates) {
+    // candidates: array of {id, weight}
+    // Efraimidis-Spirakis: key = U^(1/weight). Pick max.
+    let best = null;
+    for (const c of candidates) {
+      const w = clamp(c.weight||1, 1, 10);
+      const u = Math.max(1e-9, rng());
+      const key = Math.pow(u, 1.0 / w);
+      if (!best || key > best.key) best = { id: c.id, key };
+    }
+    return best ? best.id : null;
+  }
+
+  function isTimeAllowed(evt, timeLabel) {
+    if (!evt.allowedTimes) return true;
+    return evt.allowedTimes.has(timeLabel);
+  }
+
+  function buildDockEventPool() {
+    // Only core events 01..10 (exclude entry/shop/boss)
+    return DOCK_EVENTS
+      .filter(e => e.kind === "EVENT" && e.id.startsWith("EVT_DOCK_") && !["EVT_DOCK_SUPPLYMENT","EVT_DOCK_BOSS"].includes(e.id));
+  }
+
+  function drawNextDockEvent() {
+    const timeLabel = TIME_LABELS[S.timeIndex];
+    const poolIds = S.dockRemainingEventIds;
+    const pool = poolIds
+      .map(id => getEventById(id))
+      .filter(Boolean)
+      .filter(evt => isTimeAllowed(evt, timeLabel));
+
+    let candidates = pool.map(evt => ({ id: evt.id, weight: evt.priority }));
+
+    // If no time-compatible left, allow any remaining (fallback)
+    if (candidates.length === 0) {
+      candidates = poolIds.map(id => {
+        const evt = getEventById(id);
+        return { id, weight: evt ? evt.priority : 1 };
+      });
+    }
+
+    const pickedId = weightedPickOneNoReplace(candidates);
+    if (!pickedId) return null;
+
+    // remove from remaining
+    S.dockRemainingEventIds = S.dockRemainingEventIds.filter(x => x !== pickedId);
+    S.dockDrawnEventIds.push(pickedId);
+    return getEventById(pickedId);
+  }
+
+  // ===== UI render =====
+  function updateTopPills() {
+    $("#pillDay").textContent = `D-${S.daysRemaining}`;
+    $("#pillRegion").textContent = S.region ? REGION_NAMES[S.region] : "—";
+    const t = (S.region && S.regionDay>0) ? `지역 D${S.regionDay} · ${TIME_LABELS[S.timeIndex]}` : "—";
+    $("#pillTime").textContent = t;
+  }
+
+  function renderStats() {
+    const rows = [
+      {k:"체력", v:`${S.hp} / ${S.maxHp}`},
+      {k:"정신력", v:`${S.san}`},
+      {k:"민첩", v:`${S.agi}`},
+      {k:"영력", v:`${S.spr}`},
+      {k:"소지금", v:`${S.money}`},
+    ];
+    const grid = $("#statGrid");
+    grid.innerHTML = "";
+    for (const r of rows) {
+      const div = document.createElement("div");
+      div.className = "stat";
+      div.innerHTML = `<div class="k">${escapeHTML(r.k)}</div><div class="v">${escapeHTML(r.v)}</div>`;
+      grid.appendChild(div);
+    }
+    $("#charLine").textContent = S.playerName ? `${S.playerName} · ${S.job}` : "—";
+  }
+
+  let currentTab = "passive";
+  function renderInventory() {
+    const list = $("#invList");
+    list.innerHTML = "";
+    const src = {
+      passive: S.passive,
+      items: S.items,
+      clues: S.clues,
+      traits: S.traits
+    }[currentTab] || [];
+
+    if (src.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "notice";
+      empty.innerHTML = "비어 있습니다.";
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const it of src) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `<div class="name">${escapeHTML(it.name)}</div><div class="desc">${escapeHTML(it.desc||"")}</div>`;
+      list.appendChild(card);
+    }
+  }
+
+  $$(".tab").forEach(t => {
+    t.addEventListener("click", () => {
+      $$(".tab").forEach(x => x.classList.remove("active"));
+      t.classList.add("active");
+      currentTab = t.dataset.tab;
+      renderInventory();
+    });
+  });
+
+  // ===== Scene helpers =====
+  function setScene(title, htmlBody, choiceButtons=[], sceneImage=null) {
+    $("#sceneTitle").textContent = title;
+    $("#story").innerHTML = htmlBody;
+    // Image slot: sceneImage는 dataURL/base64 또는 URL 문자열 (없으면 플레이스홀더 표시)
+    const img = $("#sceneArtImg");
+    const ph  = $("#sceneArtPh");
+    if (sceneImage) {
+      img.src = sceneImage;
+      img.style.display = "block";
+      ph.style.display = "none";
+    } else {
+      img.removeAttribute("src");
+      img.style.display = "none";
+      ph.style.display = "flex";
+    }
+    const c = $("#choices");
+    c.innerHTML = "";
+    for (const b of choiceButtons) {
+      const btn = document.createElement("button");
+      btn.className = "choice";
+      if (b.disabled) btn.disabled = true;
+      btn.innerHTML = `
+        <div class="label">
+          <div class="left">${escapeHTML(b.text)}</div>
+          <div class="right">${b.right ? escapeHTML(b.right) : ""}</div>
+        </div>
+      `;
+      btn.addEventListener("click", () => b.onClick && b.onClick());
+      c.appendChild(btn);
+    }
+    updateTopPills();
+    renderStats();
+    renderInventory();
+  }
+
+  function splitPrologue(raw) {
+    // split at the choice "ㅇ 구덩이의 의지를 듣는다."
+    const marker = "ㅇ 구덩이의 의지를 듣는다.";
+    const idx = raw.indexOf(marker);
+    if (idx < 0) return { a: raw, b: "" };
+    const a = raw.slice(0, idx).trim();
+    const b = raw.slice(idx + marker.length).trim();
+    return { a, b };
+  }
+
+  const {a: PRO_A, b: PRO_B} = splitPrologue(PROLOGUE_RAW);
+
+  // ===== Core flow =====
+  function gotoTitle() {
+    S = initialState();
+    setScene("타이틀", `
+      <div class="muted">나락의 구덩이</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:.2px;margin-top:4px;">13일의 저주</div>
+      <div class="dim" style="margin-top:10px;">도시 아래에서 꿈틀거리는 ‘구덩이’.<br>네 지역에서 영적 유물을 모아 바치지 못하면, 영원히 추락한다.</div>
+      <hr>
+      <div class="notice">stable.html은 “엔진 + 데이터 임베드(A안)” 기준 파일입니다.<br>이 파일만 수정해 업데이트하는 방식으로 앞으로 속도를 올립니다.</div>
+    `, [
+      { text:"게임 시작", right:"START", onClick: gotoCharSelect }
+    ]);
+  }
+
+  function gotoCharSelect() {
+    setScene("캐릭터 선택", `
+      <div class="muted">기본 캐릭터 1명만 오픈</div>
+      <div class="dim" style="margin-top:6px;">추후 업데이트 슬롯은 잠겨 있습니다.</div>
+      <hr>
+      <div class="grid2">
+        <div class="card">
+          <div class="name">학생</div>
+          <div class="desc">체력5 · 정신력4 · 민첩3 · 영력1 · 소지금2</div>
+          <div class="desc" style="margin-top:8px;"><b>기본 패시브</b><br>${escapeHTML(STUDENT_ID.desc)}</div>
+        </div>
+        <div class="card" style="opacity:.55;">
+          <div class="name">(추후 업데이트)</div>
+          <div class="desc">잠겨 있습니다.</div>
+        </div>
+        <div class="card" style="opacity:.55;">
+          <div class="name">(추후 업데이트)</div>
+          <div class="desc">잠겨 있습니다.</div>
+        </div>
+        <div class="card" style="opacity:.55;">
+          <div class="name">(추후 업데이트)</div>
+          <div class="desc">잠겨 있습니다.</div>
+        </div>
+      </div>
+      <div class="inlineInput">
+        <input id="nameInput" type="text" placeholder="이름을 입력하세요 (예: 애드리언)" maxlength="12"/>
+        <button class="smallBtn" id="btnConfirmName">이 캐릭터로 시작</button>
+      </div>
+      <div class="footerHint">※ 이름 입력 후 시작하면 학생증이 PASSIVE에 등록됩니다.</div>
+    `, []);
+
+    // wire input button
+    setTimeout(() => {
+      $("#btnConfirmName").onclick = () => {
+        const v = ($("#nameInput").value || "").trim();
+        S.playerName = v || "이름없는 학생";
+        S.job = "학생";
+        // reset stats & add passive
+        S.maxHp = 5; S.hp = 5; S.san = 4; S.agi = 3; S.spr = 1; S.money = 2;
+        S.passive = [];
+        addPassive(STUDENT_ID.name, STUDENT_ID.desc);
+        gotoProloguePart1();
+      };
+      $("#nameInput").focus();
+    }, 0);
+  }
+
+  function gotoProloguePart1() {
+    S.region = null; S.regionDay = 0; S.timeIndex = 0;
+    const text = PRO_A.replace(/\(playername\)/g, S.playerName);
+    setScene("프롤로그", `<div style="white-space:normal;">${fmt(text)}</div>`, [
+      {
+        text:"구덩이의 의지를 듣는다",
+        right:"▶",
+        onClick: gotoProloguePart2
+      }
+    ]);
+  }
+
+  function gotoProloguePart2() {
+    const text = PRO_B.replace(/\(playername\)/g, S.playerName);
+    // split at "ㅇ휴식한다." keep it as button
+    const marker = "ㅇ휴식한다.";
+    const idx = text.indexOf(marker);
+    const body = (idx >= 0) ? text.slice(0, idx).trim() : text;
+    setScene("프롤로그", `<div>${fmt(body)}</div>`, [
+      {
+        text:"휴식한다",
+        right:"▶",
+        onClick: gotoRegionSelect
+      }
+    ]);
+  }
+
+  function gotoRegionSelect() {
+    S.region = null; S.regionDay = 0; S.timeIndex = 0;
+    setScene("날이 밝았다", `
+      <div class="muted">D-${S.daysRemaining}</div>
+      <div style="margin-top:6px;">어디부터 조사를 시작할까?</div>
+      <div class="dim" style="margin-top:8px;">(선택한 지역에서 3일을 보낸다.)</div>
+    `, [
+      { text:"부둣가", right:"DOCK", onClick: () => enterDock() },
+      { text:"폐허가 된 구 도심", right:"LOCK", disabled:true },
+      { text:"실종자가 많은 거대한 숲", right:"LOCK", disabled:true },
+      { text:"심령 스팟으로 유명한 인형의 섬", right:"LOCK", disabled:true },
+    ]);
+  }
+
+  function enterDock() {
+    S.region = "DOCK";
+    S.regionDay = 0;
+    S.timeIndex = 0;
+    // Prepare dock pool
+    const pool = buildDockEventPool();
+    S.dockRemainingEventIds = pool.map(e=>e.id);
+    S.dockDrawnEventIds = [];
+    S.rewindUsedByRegion["DOCK"] = false;
+    // show entry scene (EVT_DOCK_00)
+    const entry = getEventById("EVT_DOCK_00");
+    const entryText = (entry ? entry.body : DOCK_RAW.split("\n").slice(0,20).join("\n"));
+    setScene("[EVT_DOCK_00] 부둣가 지역 입장", `<div>${fmt(entryText)}</div>`, [
+      {
+        text:"부둣가",
+        right:"▶",
+        onClick: () => startDockDay1()
+      }
+    ]);
+  }
+
+  function startDockDay1() {
+    S.regionDay = 1;
+    S.timeIndex = 0; // 낮
+    nextDockCard();
+  }
+
+  function nextDockCard() {
+    // day3 night => shop, day3 deepnight => boss
+    if (S.regionDay === 3 && S.timeIndex === 1) {
+      return gotoDockShop();
+    }
+    if (S.regionDay === 3 && S.timeIndex === 2) {
+      return gotoDockBoss();
+    }
+
+    const evt = drawNextDockEvent();
+    if (!evt) {
+      // fallback: go to shop/boss or end
+      if (S.regionDay === 3) {
+        S.timeIndex = 1;
+        return nextDockCard();
+      }
+      // otherwise advance time
+      advanceTime();
+      return;
+    }
+    playEvent(evt);
+  }
+
+  function playEvent(evt) {
+    const title = `[${evt.id}] ${evt.title}`;
+    const body = evt.body ? evt.body.replace(/\(playername\)/g, S.playerName) : "";
+    const choiceButtons = [];
+
+    // For entry-like events with no sections, just continue
+    if (evt.sections.length === 0) {
+      choiceButtons.push({
+        text:"계속",
+        right:"▶",
+        onClick: () => advanceAfterEvent()
+      });
+      setScene(title, `<div>${fmt(body)}</div>`, choiceButtons);
+      return;
+    }
+
+    // Show bullet list (if any) and map to sections order
+    const bulletLabels = evt.choiceBullets.length ? evt.choiceBullets : evt.sections.map(s=>s.title);
+    evt.sections.forEach((sec, idx) => {
+      const btnText = bulletLabels[idx] ? bulletLabels[idx].replace(/\(playername\)/g, S.playerName) : sec.title;
+      // show chance preview
+      const chanceInfo = calcChance(sec.judge, sec.diff);
+      let right = "";
+      if (chanceInfo.kind === "AUTO") right = "성공";
+      else if (chanceInfo.kind === "MONEY_THRESHOLD") right = (chanceInfo.chance===100 ? "가능" : "부족");
+      else {
+        const plus = chanceInfo.passiveBonus ? (chanceInfo.passiveBonus>0 ? ` +${chanceInfo.passiveBonus}%` : ` ${chanceInfo.passiveBonus}%`) : "";
+        right = `${chanceInfo.chance}% · ${chanceInfo.statLabel}(${chanceInfo.statVal})${plus}`;
+      }
+      choiceButtons.push({
+        text: btnText,
+        right,
+        onClick: () => resolveChoice(evt, sec, idx)
+      });
+    });
+
+    setScene(title, `<div>${fmt(body)}</div>`, choiceButtons);
+  }
+
+  function makeSnapshot() {
+    // deep clone minimal
+    S.snapshot = JSON.parse(JSON.stringify({
+      hp:S.hp, san:S.san, agi:S.agi, spr:S.spr, money:S.money,
+      passive:S.passive, items:S.items, clues:S.clues, traits:S.traits,
+      dockRemainingEventIds:S.dockRemainingEventIds,
+      dockDrawnEventIds:S.dockDrawnEventIds,
+      regionDay:S.regionDay, timeIndex:S.timeIndex,
+      shopOffers:S.shopOffers,
+      purchased:S.purchased,
+      daysRemaining:S.daysRemaining
+    }));
+  }
+  function restoreSnapshot() {
+    if (!S.snapshot) return;
+    Object.assign(S, JSON.parse(JSON.stringify(S.snapshot)));
+  }
+
+  function resolveChoice(evt, sec, idx) {
+    makeSnapshot(); // for student rewind
+    const chanceInfo = calcChance(sec.judge, sec.diff);
+
+    let ok = false;
+    let roll = null;
+
+    if (chanceInfo.kind === "AUTO") {
+      ok = true;
+    } else if (chanceInfo.kind === "MONEY_THRESHOLD") {
+      ok = (S.money >= chanceInfo.need);
+    } else {
+      roll = roll100();
+      ok = roll <= chanceInfo.chance;
+    }
+
+    // Render result
+    const headline = ok ? `<span class="pill good">성공</span>` : `<span class="pill bad">실패</span>`;
+    const meta = (chanceInfo.kind==="ROLL")
+      ? `<span class="pill">성공률 ${chanceInfo.chance}% · roll ${roll}</span>`
+      : (chanceInfo.kind==="MONEY_THRESHOLD" ? `<span class="pill">소지금 ${S.money} / 필요 ${chanceInfo.need}</span>` : `<span class="pill">자동</span>`);
+
+    const resultText = (ok ? sec.successText : sec.failText).replace(/\(playername\)/g, S.playerName);
+
+    // Apply effect lines
+    applyEffectsFromText(resultText);
+
+    // After applying, check gameover
+    const isDead = (S.hp <= 0);
+    const isMad = (S.san <= 0);
+
+    const buttons = [];
+
+    // Student rewind button (region 1회)
+    const canRewind = (S.region && S.job==="학생" && hasPassive("학생증") && S.rewindUsedByRegion[S.region] === false);
+    if (canRewind) {
+      buttons.push({
+        text:"학생증으로 되돌리기 (지역 1회)",
+        right:"UNDO",
+        onClick: () => {
+          S.rewindUsedByRegion[S.region] = true; // consume
+          restoreSnapshot();
+          // go back to same event screen
+          playEvent(evt);
+        }
+      });
+    }
+
+    if (isDead || isMad) {
+      buttons.push({
+        text:"게임 오버",
+        right:"END",
+        onClick: () => gotoTitle()
+      });
+      const cause = isDead ? "체력이 0이 되었다." : "정신력이 0이 되었다.";
+      setScene("판정 결과", `
+        <div style="display:flex;gap:8px;align-items:center;">${headline} ${meta}</div>
+        <hr>
+        <div>${fmt(resultText)}</div>
+        <hr>
+        <div class="pill bad">GAME OVER</div>
+        <div class="dim" style="margin-top:6px;">${escapeHTML(cause)}</div>
+      `, buttons);
+      return;
+    }
+
+    buttons.push({
+      text:"계속",
+      right:"▶",
+      onClick: () => advanceAfterEvent()
+    });
+
+    setScene("판정 결과", `
+      <div style="display:flex;gap:8px;align-items:center;">${headline} ${meta}</div>
+      <hr>
+      <div>${fmt(resultText)}</div>
+    `, buttons);
+  }
+
+  function advanceAfterEvent() {
+    advanceTime();
+    nextDockCard();
+  }
+
+  function advanceTime() {
+    // advance within region
+    if (!S.region) return;
+    if (S.region !== "DOCK") return;
+
+    if (S.regionDay <= 0) return;
+
+    if (S.regionDay === 3) {
+      // Day3 only has 낮 event, then 밤=shop, 심야=boss handled elsewhere
+      if (S.timeIndex === 0) {
+        S.timeIndex = 1;
+        return;
+      }
+      // after shop (timeIndex 1) we move to boss (timeIndex 2)
+      if (S.timeIndex === 1) {
+        S.timeIndex = 2;
+        return;
+      }
+      return;
+    }
+
+    // Day1-2: 낮->밤->심야->next day
+    if (S.timeIndex < 2) {
+      S.timeIndex += 1;
+    } else {
+      // end of day
+      S.timeIndex = 0;
+      S.regionDay += 1;
+      S.daysRemaining = Math.max(0, S.daysRemaining - 1);
+    }
+  }
+
+  // ===== Shop (3일차 밤) =====
+  function pick3Unique(list) {
+    const pool = [...list];
+    for (let i = pool.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    return pool.slice(0, 3);
+  }
+
+  function gotoDockShop() {
+    const key = "DOCK_D3_SHOP";
+    if (!S.shopOffers[key]) {
+      const offers = pick3Unique(STORE_ITEMS).map(x=>x.id);
+      S.shopOffers[key] = offers;
+      S.purchased[key] = false;
+    }
+    const offerIds = S.shopOffers[key];
+    const offers = offerIds.map(id => STORE_ITEMS.find(x=>x.id===id)).filter(Boolean);
+
+    const body = `
+      <div class="muted">[EVT_DOCK_SUPPLYMENT] 심야의 편의점</div>
+      <hr>
+      <div>${fmt(`지친 몸과 허기를 달래줄 얼마 되지 않는, 이 곳에서 친절한 편의점이다.\n간판의 불이 힘없이 점멸하지만, 문을 열고 들어가면 불친절한 직원이 반겨주지만,\n이 곳에 머무르는 것 만으로도 안전하다는 느낌을 받는다.\n"어서오세요."\n어째서인지 1초 전에 얼굴을 보고 지나쳤는데도 점원의 얼굴이 기억나지 않는다.`)}</div>
+      <hr>
+      <div class="dim">진열된 상품은 3개. 그중 1개만 구매할 수 있다.</div>
+    `;
+
+    const buttons = [];
+    for (const it of offers) {
+      const canBuy = (S.money >= it.price) && (S.purchased[key] !== true);
+      buttons.push({
+        text: `${it.name} (₩${it.price})`,
+        right: canBuy ? "구매" : (S.purchased[key] ? "구매완료" : "부족"),
+        disabled: !canBuy,
+        onClick: () => buyShopItem(key, it)
+      });
+    }
+    buttons.push({
+      text: "아무것도 사지 않는다",
+      right: "SKIP",
+      disabled: (S.purchased[key] === true),
+      onClick: () => {
+        S.purchased[key] = true;
+        // proceed to boss
+        S.timeIndex = 2;
+        nextDockCard();
+      }
+    });
+
+    setScene("편의점", body, buttons);
+  }
+
+  function buyShopItem(key, it) {
+    if (S.purchased[key]) return;
+    if (S.money < it.price) return;
+
+    S.money -= it.price;
+    S.purchased[key] = true;
+
+    // Apply effect_text very lightly (supports "체력+1", "정신력+1", "민첩+1", "영력+1", "최대체력+1")
+    const eff = it.effect_text || "";
+    // max hp
+    const mh = eff.match(/최대\s*체력\s*\+\s*(\d+)/);
+    if (mh) {
+      const n = parseInt(mh[1],10);
+      S.maxHp += n;
+      S.hp = clamp(S.hp + n, 0, S.maxHp);
+    }
+    // simple + stats
+    const pairs = [
+      ["체력","hp"],
+      ["정신력","san"],
+      ["민첩","agi"],
+      ["영력","spr"],
+    ];
+    for (const [k, prop] of pairs) {
+      const m = eff.match(new RegExp(k + "\\s*\\+\\s*(\\d+)"));
+      if (m) {
+        const n = parseInt(m[1],10);
+        if (prop==="hp") S.hp = clamp(S.hp + n, 0, S.maxHp);
+        else S[prop] = clamp(S[prop] + n, 0, 99);
+      }
+    }
+
+    // Add as item for passive/consumable in inventory (data only; usage is automated later)
+    addItem(it.name, it.desc + "\n\n효과: " + it.effect_text);
+
+    // show result, then proceed to boss
+    setScene("구매 완료", `
+      <div class="pill good">구매 성공</div>
+      <hr>
+      <div><b>${escapeHTML(it.name)}</b> 을(를) 구매했다.</div>
+      <div class="dim" style="margin-top:6px;">소지금 -${it.price}</div>
+      <hr>
+      <div class="muted">${escapeHTML(it.effect_text)}</div>
+    `, [
+      {
+        text:"심야로 향한다",
+        right:"▶",
+        onClick: () => {
+          S.timeIndex = 2;
+          nextDockCard();
+        }
+      }
+    ]);
+  }
+
+  // ===== Boss (3일차 심야) =====
+  function gotoDockBoss() {
+    // Simplified 3-turn boss using your placeholder text
+    const bossIntro = `불로불사를 얻는데 실패한 괴물을 마주했다.`;
+
+    S.bossTurn = 1;
+
+    function renderTurn() {
+      const turn = S.bossTurn;
+      let body = `<div class="muted">[EVT_DOCK_BOSS] 부둣가 보스</div><hr><div>${fmt(bossIntro)}</div><hr>`;
+      let prompt = "";
+      let choices = [];
+
+      if (turn === 1) {
+        prompt = "괴물이 괴성을 질러왔다.";
+        choices = [
+          { text:"귀를 막는다", judge:"정신력", diff:"보통", succ:"아슬아슬하게 버텼다.", fail:"고막이 울린다. 정신이 깎인다.\n> 정신력-1" },
+          { text:"같이 소리를 지른다", judge:"체력", diff:"어려움", succ:"목이 찢어질 듯하지만 버텼다.", fail:"숨이 막힌다.\n> 체력-1" },
+        ];
+        if (hasClue("CLUE_DOCK_02") || hasClue("그믐달")) {
+          choices.push({ text:"그믐달 밤의 의식에 대해 떠올린다", judge:"영력", diff:"쉬움", succ:"의식의 단서가 공포를 밀어낸다.", fail:"머릿속이 하얘진다.\n> 정신력-1" });
+        }
+      } else if (turn === 2) {
+        prompt = "괴물이 달려들어 공격한다.";
+        choices = [
+          { text:"회피한다", judge:"민첩", diff:"보통", succ:"간신히 피했다.", fail:"긁혔다.\n> 체력-1" },
+          { text:"막는다", judge:"체력", diff:"어려움", succ:"충격을 받아내며 버텼다.", fail:"팔이 저린다.\n> 체력-1" },
+        ];
+        if (hasClue("CLUE_DOCK_01") || hasClue("정어리")) {
+          choices.push({ text:"정어리 떼를 꿰뚫은 구멍을 떠올린다", judge:"영력", diff:"쉬움", succ:"괴물의 약점을 간파한다.", fail:"아무 것도 떠오르지 않는다." });
+        }
+      } else {
+        prompt = "괴물이 울부짖으며 토하기 시작한다. 생선의 살점, 사람의 것으로 보이는 것들이 있다.";
+        // Ending choices: check items for special options
+        choices = [
+          { text:"괴물을 공격한다", judge:"체력", diff:"보통",
+             succ:"괴물이 쓰러지고 그 자리에는 비늘만이 남았다.\n> item “마지막 인어의 부패한 비늘” 획득",
+             fail:"손이 떨린다. 하지만 끝은 바뀌지 않았다.\n> item “마지막 인어의 부패한 비늘” 획득" },
+        ];
+        if (hasClue("등대지기의 일지")) {
+          choices.push({
+            text:"등대지기의 일지를 건넨다",
+            judge:"영력", diff:"보통",
+            succ:"괴물은 괴로워하더니 녹아내렸다.\n> item “마지막 인어의 부패한 비늘” 획득",
+            fail:"일지는 젖어 찢어졌다. 그래도 비늘만은 남는다.\n> item “마지막 인어의 부패한 비늘” 획득"
+          });
+        }
+        if (hasItem("증언")) {
+          choices.push({
+            text:"증언을 틀어 들려준다",
+            judge:"정신력", diff:"쉬움",
+            succ:"괴물의 눈빛이 잠깐 사람으로 되돌아왔다.\n> item “마지막 인어의 부패한 비늘” 획득",
+            fail:"소리는 깨졌다. 그래도 비늘은 남는다.\n> item “마지막 인어의 부패한 비늘” 획득"
+          });
+        }
+      }
+
+      body += `<div class="pill">TURN ${turn} / 3</div><div style="margin-top:10px;">${escapeHTML(prompt)}</div>`;
+      const btns = choices.map(ch => {
+        const info = calcChance(ch.judge, ch.diff);
+        const right = (info.kind==="ROLL") ? `${info.chance}% · ${info.statLabel}(${info.statVal})` : "—";
+        return {
+          text: ch.text,
+          right,
+          onClick: () => resolveBossChoice(ch, info)
+        };
+      });
+
+      setScene("보스전", body, btns);
+    }
+
+    function resolveBossChoice(ch, info) {
+      makeSnapshot(); // allow student rewind here too
+      let ok = true;
+      let r = null;
+      if (info.kind === "ROLL") {
+        r = roll100();
+        ok = r <= info.chance;
+      }
+      const headline = ok ? `<span class="pill good">성공</span>` : `<span class="pill bad">실패</span>`;
+      const meta = (info.kind==="ROLL") ? `<span class="pill">성공률 ${info.chance}% · roll ${r}</span>` : `<span class="pill">자동</span>`;
+      const resultText = ok ? ch.succ : ch.fail;
+      applyEffectsFromText(resultText);
+
+      const canRewind = (S.region && S.job==="학생" && hasPassive("학생증") && S.rewindUsedByRegion[S.region] === false);
+      const buttons = [];
+      if (canRewind) {
+        buttons.push({
+          text:"학생증으로 되돌리기 (지역 1회)",
+          right:"UNDO",
+          onClick: () => {
+            S.rewindUsedByRegion[S.region] = true;
+            restoreSnapshot();
+            renderTurn();
+          }
+        });
+      }
+
+      const isDead = (S.hp<=0), isMad = (S.san<=0);
+      if (isDead || isMad) {
+        buttons.push({
+          text:"게임 오버",
+          right:"END",
+          onClick: () => gotoTitle()
+        });
+        setScene("판정 결과", `
+          <div style="display:flex;gap:8px;align-items:center;">${headline} ${meta}</div>
+          <hr><div>${fmt(resultText)}</div>
+          <hr><div class="pill bad">GAME OVER</div>
+        `, buttons);
+        return;
+      }
+
+      if (S.bossTurn < 3) {
+        buttons.push({
+          text:"다음 턴",
+          right:"▶",
+          onClick: () => {
+            S.bossTurn += 1;
+            renderTurn();
+          }
+        });
+      } else {
+        buttons.push({
+          text:"귀가한다",
+          right:"▶",
+          onClick: () => finishDockRegion()
+        });
+      }
+
+      setScene("판정 결과", `
+        <div style="display:flex;gap:8px;align-items:center;">${headline} ${meta}</div>
+        <hr><div>${fmt(resultText)}</div>
+      `, buttons);
+    }
+
+    renderTurn();
+  }
+
+  function finishDockRegion() {
+    // Decrement day for day3 completion
+    S.daysRemaining = Math.max(0, S.daysRemaining - 1);
+
+    // If relic was granted as passive item line, it might already be passive.
+    // Ensure relic exists as ITEM for now:
+    if (!hasItem("마지막 인어의 부패한 비늘") && !hasPassive("마지막 인어의 부패한 비늘")) {
+      addItem("마지막 인어의 부패한 비늘", "이 도시에 전설로 전해져왔던 마지막으로 남은 인어의, 마지막 비늘입니다...");
+    }
+
+    setScene("부둣가 완료", `
+      <div class="pill good">지역 클리어</div>
+      <hr>
+      <div class="muted">3일간의 조사가 끝났다.</div>
+      <div class="dim" style="margin-top:6px;">오늘 밤 만큼은 귀가하여 푹 쉬고, 다음 날 다른 지역으로 떠나기로 했다.</div>
+    `, [
+      {
+        text:"휴식한다",
+        right:"▶",
+        onClick: () => gotoRegionSelect()
+      }
+    ]);
+  }
+
+  // ===== Restart =====
+  $("#btnRestart").addEventListener("click", () => gotoTitle());
+
+  // ===== Boot =====
+  gotoTitle();
+})();
+</script>
+</body>
+</html>
