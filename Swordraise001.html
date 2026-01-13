@@ -1,0 +1,2125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>전설의 레전드 — stable</title>
+  <style>
+    :root{
+      --bg:#0f120f;
+      --panel:rgba(18,20,16,0.92);
+      --panel2:rgba(24,26,20,0.90);
+      --ink:#e8e2d6;
+      --muted:rgba(232,226,214,0.72);
+      --gold:rgba(255,215,128,1);
+      --gold-2:rgba(255,215,128,0.22);
+      --gold-3:rgba(255,215,128,0.12);
+      --ok:rgba(120,255,190,0.10);
+      --bad:rgba(255,120,120,0.10);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 800px at 50% -10%, rgba(255,215,128,0.08), transparent 55%),
+                  radial-gradient(1000px 600px at 20% 30%, rgba(80,140,90,0.10), transparent 60%),
+                  radial-gradient(900px 700px at 90% 60%, rgba(70,60,40,0.12), transparent 55%),
+                  var(--bg);
+      color:var(--ink);
+      font-family: -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      letter-spacing: 0.1px;
+    }
+    .wrap{max-width:1200px;margin:0 auto;padding:16px}
+    .topbar{
+      display:flex;align-items:flex-end;justify-content:space-between;gap:12px;
+      padding:14px 14px 10px;border:1px solid var(--gold-2);border-radius:16px;
+      background:linear-gradient(180deg, rgba(24,26,20,0.92), rgba(18,20,16,0.92));
+    }
+    .title{font-weight:900;font-size:18px}
+    .subtitle{opacity:.75;font-size:12px;margin-top:4px}
+    .stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .pill{
+      border:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.92);
+      padding:8px 10px;border-radius:999px;font-weight:800;font-size:12px;
+    }
+    .grid{
+      margin-top:14px;
+      display:grid;gap:12px;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items:start;
+    }
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} .stats{justify-content:flex-start} }
+    .card{
+      border:1px solid var(--gold-2);
+      background:var(--panel);
+      border-radius:16px;
+      overflow:hidden;
+    }
+    .card header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--gold-3);
+      background:var(--panel2);
+    }
+    .card header .h{font-weight:900}
+    .card header .s{opacity:.75;font-size:12px;margin-top:2px}
+    .card .body{padding:12px 14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .row.space{justify-content:space-between}
+    .btn{
+      border:1px solid var(--gold-2);
+      background:rgba(34,36,30,0.92);
+      color:inherit;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn.small{padding:7px 9px;border-radius:10px;font-size:12px}
+    .btn.primary{ background:linear-gradient(180deg, rgba(255,215,128,0.18), rgba(34,36,30,0.92)); }
+    .btn.danger{ border-color:rgba(255,120,120,0.22); box-shadow:0 0 0 1px rgba(255,120,120,0.08) inset; }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; }
+    .hr{height:1px;background:var(--gold-3);margin:12px 0}
+    .two{ display:grid;grid-template-columns:1fr 1fr;gap:10px; }
+    @media (max-width:520px){ .two{grid-template-columns:1fr} }
+    .slot{
+      border:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.92);
+      border-radius:14px;
+      padding:10px 12px;
+      position:relative;
+      cursor:pointer;
+    }
+    .slot.active{outline:2px solid rgba(255,215,128,0.35)}
+    .slot .tag{
+      position:absolute;top:10px;right:10px;
+      border:1px solid var(--gold-3);
+      padding:4px 8px;border-radius:999px;font-size:11px;font-weight:900;opacity:.85;
+    }
+    .slot .name{font-weight:900}
+    .slot .meta{opacity:.78;font-size:12px;margin-top:2px}
+    .slot .meta2{opacity:.70;font-size:12px;margin-top:2px}
+    .chat-log{
+      height:360px; overflow-y:auto; padding:12px 12px 18px;
+      display:flex; flex-direction:column; gap:10px;
+    }
+    .msg{display:flex;gap:10px;align-items:flex-end}
+    .msg .meta{opacity:.75;font-size:12px;min-width:54px;text-align:right}
+    .bubble{
+      max-width:78%;
+      padding:10px 12px;border-radius:14px;
+      line-height:1.25;font-size:14px;
+      border:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.92);
+    
+      white-space:pre-line;
+    }
+    .bubble.system{
+      max-width:92%;
+      margin:0 auto;
+      text-align:center;
+      font-weight:900;
+      border-radius:999px;
+      background:rgba(255,215,128,0.10);
+      border:1px solid var(--gold-2);
+    }
+    .bubble.success{box-shadow:0 0 0 1px var(--ok) inset}
+    .bubble.break{box-shadow:0 0 0 1px var(--bad) inset}
+    .mini{opacity:.75;font-size:12px}
+    input,select{
+      border:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.92);
+      color:inherit;border-radius:12px;
+      padding:10px 10px;
+      width:100%;
+    }
+    label{opacity:.8;font-size:12px;font-weight:800}
+    .formgrid{display:grid;gap:8px}
+    .form2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .friends-list{
+      border-top:1px solid var(--gold-3);
+      padding:12px 14px 16px;
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .friend-card{
+      border:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.92);
+      border-radius:12px;padding:10px 12px;
+      display:grid;grid-template-columns:1fr auto;gap:10px;
+    }
+    .friend-line1{font-weight:900}
+    .friend-line2{opacity:.85;font-size:13px}
+    .friend-line3{opacity:.72;font-size:12px}
+    .friend-actions{display:flex;flex-direction:column;gap:6px}
+
+    /* Toast */
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:rgba(34,36,30,0.96);
+      border:1px solid var(--gold-2);
+      border-radius:999px;
+      padding:10px 14px;
+      font-weight:900;
+      opacity:0; pointer-events:none;
+      transition:opacity .2s ease;
+      max-width:92vw; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      z-index:40;
+    }
+    .toast.on{opacity:1}
+
+    /* Modal */
+    .modal-backdrop{
+      position:fixed; inset:0;
+      background:rgba(0,0,0,0.62);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      z-index:50;
+    }
+    .modal-backdrop.on{ display:flex; }
+    .modal{
+      width:min(560px, 92vw);
+      border:1px solid var(--gold-2);
+      background:linear-gradient(180deg, rgba(24,26,20,0.98), rgba(18,20,16,0.98));
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 16px 60px rgba(0,0,0,0.55);
+    }
+    .modal header{
+      padding:12px 14px;
+      border-bottom:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.90);
+      font-weight:900;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+    }
+    .modal header .kind{
+      font-size:12px;
+      opacity:.85;
+      border:1px solid var(--gold-3);
+      padding:4px 8px;
+      border-radius:999px;
+      background:rgba(255,215,128,0.10);
+      white-space:nowrap;
+    }
+    .modal .content{ padding:14px; }
+    .modal .content p{ margin:0 0 10px; line-height:1.45; white-space:pre-line; }
+    .modal .content .big{ font-weight:900; font-size:16px; }
+    .modal footer{
+      padding:12px 14px;
+      border-top:1px solid var(--gold-3);
+      background:rgba(34,36,30,0.86);
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+    }
+  
+    .portrait-slot{
+      height: 140px;
+      border: 1px dashed rgba(255,210,120,0.55);
+      border-radius: 16px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding: 10px;
+      color: rgba(255,255,255,0.8);
+      background: rgba(0,0,0,0.12);
+      font-weight: 900;
+      letter-spacing: .2px;
+    }
+    .pve-logwrap{ display:flex; flex-direction:column; gap:10px; }
+    .pve-log{ height: 260px; }
+    .pve-log .line{ padding: 8px 10px; border-radius: 12px; margin-bottom: 8px; border: 1px solid rgba(255,210,120,0.18); background: rgba(0,0,0,0.14);  white-space: pre-line; }
+    .pve-log .t{ opacity:.7; font-weight:900; margin-right:8px; }
+
+
+    /* PVE log scroll fix: prevent clipping inside card (card uses overflow:hidden) */
+    .chatlog{ overflow-y:auto; overscroll-behavior:contain; }
+    .pve-log{ height: 320px; overflow-y:auto; padding: 4px 2px; }
+    @media (max-width: 520px){
+      .pve-log{ height: 300px; }
+      .portrait-slot{ height: 120px; }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div>
+        <div class="title">프로젝트 &lt;전설의 레전드&gt; — stable</div>
+        <div class="subtitle">로컬 저장(localStorage) | 무료급식소(24h 4회, 6h 쿨, 5,000G) | 슬롯 덮어쓰기 금지 | 발굴/강화/판매 | 강화 결과/발굴 결과 팝업</div>
+      </div>
+      <div class="stats">
+        <div class="pill">💰 골드: <span id="gold">0</span>G</div>
+        <div class="pill">🧱 고철: <span id="scrap">0</span></div>
+        <div class="pill">🏆 PVP: <span id="pvpStat">0W-0L</span> (연승 <span id="streak">0</span>)</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <header>
+          <div class="h">플레이</div>
+          <div class="s">무기 슬롯 2개 | 슬롯이 꽉 차면 발굴 불가(팔거나/터져야 교체)</div>
+        </header>
+        <div class="body">
+          <div class="row space">
+            <div class="row">
+              <button id="btnCafeteria" class="btn primary">🍚 무료급식소 받기</button>
+              <div class="mini" id="cafeteriaInfo">—</div>
+            </div>
+            <div class="row">
+              <button id="btnDig" class="btn">⛏️ 유물 발굴/감정</button>
+              <button id="btnPvp" class="btn">⚔️ PVP</button>
+              <button id="btnPve" class="btn">🧟 PVE</button>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row space">
+            <div class="mini">선택된 슬롯: <b id="selectedSlotLabel">슬롯 1</b></div>
+            <div class="row">
+              <button id="btnEnhance" class="btn primary">✨ 강화</button>
+              <button id="btnSell" class="btn">🏷️ 판매</button>
+              <button id="btnSwitch" class="btn small">↔️ 슬롯 전환</button>
+            </div>
+          </div>
+
+          <div class="two" style="margin-top:10px">
+            <div id="slot0" class="slot">
+              <div class="tag">슬롯 1</div>
+              <div class="name" id="slot0Name">—</div>
+              <div class="meta" id="slot0Meta">—</div>
+              <div class="meta2" id="slot0Meta2">—</div>
+            </div>
+            <div id="slot1" class="slot">
+              <div class="tag">슬롯 2</div>
+              <div class="name" id="slot1Name">—</div>
+              <div class="meta" id="slot1Meta">—</div>
+              <div class="meta2" id="slot1Meta2">—</div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="row space">
+            <div class="muted mini">발굴 비용(유료): 5,000G · 강화 비용: 검키우기식(10/20/50 × 10^k)</div>
+            <button id="btnReset" class="btn danger small">세이브 초기화</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <header>
+          <div class="h">월드 채팅</div>
+          <div class="s">+10 이상 강화 성공/터짐 방송 · (느낌용) 랜덤 리액션</div>
+        </header>
+        <div id="chatLog" class="chat-log" aria-live="polite"></div>
+        <div class="body" style="padding-top:0">
+          <div class="row space">
+            <button id="toggleAutoScroll" class="btn small">자동 스크롤: ON</button>
+            <button id="clearChat" class="btn small">지우기</button>
+          </div>
+        </div>
+      </div>
+
+      
+      <div id="pveCard" class="card" style="grid-column: 1 / -1;">
+        <header class="row space">
+          <div>
+            <h2 style="margin:0">🐾 PVE 사냥</h2>
+            <div class="mini" style="opacity:.85">선택 슬롯의 무기로 사냥합니다. 패배 보상 0G · 손실 0 · 입장료 0</div>
+          </div>
+          <div class="mini" id="pveStat" style="text-align:right">—</div>
+        </header>
+        <div class="hr"></div>
+        <div class="row space" style="gap:10px; flex-wrap:wrap">
+          <label class="mini" style="opacity:.85">스테이지</label>
+          <select id="pveStageSelect" class="input" style="min-width:180px"></select>
+          <button id="btnPveHunt" class="btn primary">⚔️ 사냥하기</button>
+          <button id="btnPveQuick" class="btn">⚡ 빠른 사냥 x10</button>
+          <div class="mini" id="pveInfo" style="opacity:.85; flex:1">—</div>
+        </div>
+      </div>
+
+<div class="card" id="pveLogCard" style="grid-column: 1 / -1;">
+        <header>
+          <div class="h">PVE 전투 로그</div>
+          <div class="s">사냥 결과가 여기에 누적됩니다 (로컬 저장)</div>
+        </header>
+        <div class="body">
+          <div class="pve-logwrap">
+            <div id="pvePortraitSlot" class="portrait-slot">몬스터 포트레이트 영역 (추후 이미지)</div>
+            <div id="pveLog" class="chatlog pve-log" aria-label="PVE 전투 로그"></div>
+          </div>
+          <div class="row" style="justify-content:flex-end; margin-top:10px;">
+            <button id="btnClearPveLog" class="btn danger" type="button">지우기</button>
+          </div>
+        </div>
+      </div>
+
+<div id="toast" class="toast">—</div>
+
+  <div id="modalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal">
+      <header>
+        <div id="modalTitle">알림</div>
+        <div id="modalKind" class="kind">SYSTEM</div>
+      </header>
+      <div class="content">
+        <p id="modalBody" class="big">—</p>
+        <p id="modalSub" class="mini" style="opacity:.78"></p>
+      </div>
+      <footer>
+        <button id="modalOk" class="btn primary">확인</button>
+      </footer>
+    </div>
+  </div>
+
+<script>
+const APP_VERSION = "2.1.0";
+const START_GOLD = 100000;
+
+// IMPORTANT: 키를 올려서(버전업) 이전 꼬인 세이브 영향 차단
+const SAVE_KEY = "legend_of_legend_stable_v4";
+const FRIENDS_KEY = "legend_friends_v1";
+
+/** UUID helper */
+function uuid(){
+  if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+const $ = (id)=>document.getElementById(id);
+function fmt(n){ return (Math.round(n)).toLocaleString("ko-KR"); }
+function clamp(min, x, max){ return Math.max(min, Math.min(x, max)); }
+function nowHHMM(){
+  const d = new Date();
+  return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+}
+function escapeHtml(s){
+  return String(s).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+
+/* Toast */
+const toastEl = $("toast");
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("on");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toastEl.classList.remove("on"), 1400);
+}
+
+/* Modal (popup) */
+const modalBackdrop = $("modalBackdrop");
+const modalTitleEl = $("modalTitle");
+const modalBodyEl = $("modalBody");
+const modalSubEl = $("modalSub");
+const modalKindEl = $("modalKind");
+const modalOkBtn = $("modalOk");
+let _modalResolver = null;
+function showModal(title, body, sub="", kind="SYSTEM"){
+  modalTitleEl.textContent = title;
+  modalBodyEl.textContent = body;
+  modalSubEl.textContent = sub || "";
+  modalKindEl.textContent = kind;
+  modalBackdrop.classList.add("on");
+  return new Promise((resolve)=>{ _modalResolver = resolve; });
+}
+function closeModal(){
+  modalBackdrop.classList.remove("on");
+  const r = _modalResolver; _modalResolver = null;
+  if(r) r(true);
+}
+modalOkBtn.addEventListener("click", closeModal);
+modalBackdrop.addEventListener("click",(e)=>{ if(e.target===modalBackdrop) closeModal(); });
+document.addEventListener("keydown",(e)=>{ if(e.key==="Escape" && modalBackdrop.classList.contains("on")) closeModal(); });
+
+
+/* Weapon Naming (속성 특화 + 강화 변주) */
+const ATTRIBUTES = ["대지", "바람", "번개", "물", "얼음", "빛", "축복", "파멸", "어둠", "유혹", "선율", "공허", "독", "화염", "중력", "뿌리", "가시", "선혈", "분노", "달빛", "태양", "부식"];
+const ATTR_VARIANTS = {
+  "대지": [
+    "대지",
+    "토흙",
+    "암반",
+    "산맥",
+    "대지의 심장"
+  ],
+  "바람": [
+    "바람",
+    "미풍",
+    "청풍",
+    "높새바람",
+    "폭풍"
+  ],
+  "번개": [
+    "번개",
+    "섬광",
+    "뇌광",
+    "낙뢰",
+    "천둥벼락"
+  ],
+  "물": [
+    "물",
+    "물결",
+    "청류",
+    "급류",
+    "해일"
+  ],
+  "얼음": [
+    "얼음",
+    "서리",
+    "빙결",
+    "한빙",
+    "영원의 결빙"
+  ],
+  "빛": [
+    "빛",
+    "광휘",
+    "성광",
+    "찬란",
+    "천상의 빛"
+  ],
+  "축복": [
+    "축복",
+    "가호",
+    "성은",
+    "은총",
+    "대축복"
+  ],
+  "파멸": [
+    "파멸",
+    "몰락",
+    "붕괴",
+    "멸절",
+    "종말"
+  ],
+  "어둠": [
+    "어둠",
+    "흑영",
+    "암흑",
+    "심야",
+    "끝없는 어둠"
+  ],
+  "유혹": [
+    "유혹",
+    "매혹",
+    "현혹",
+    "치명",
+    "금단의 유혹"
+  ],
+  "선율": [
+    "선율",
+    "가락",
+    "화음",
+    "협주",
+    "대합창"
+  ],
+  "공허": [
+    "공허",
+    "허무",
+    "무(無)",
+    "공백",
+    "심연의 공허"
+  ],
+  "독": [
+    "독",
+    "맹독",
+    "극독",
+    "독혈",
+    "만독"
+  ],
+  "화염": [
+    "화염",
+    "불꽃",
+    "홍염",
+    "업화",
+    "태초의 불"
+  ],
+  "중력": [
+    "중력",
+    "압력",
+    "인력",
+    "중력파",
+    "절대중력"
+  ],
+  "뿌리": [
+    "뿌리",
+    "싹",
+    "근맥",
+    "근원뿌리",
+    "세계수의 뿌리"
+  ],
+  "가시": [
+    "가시",
+    "자상",
+    "극침",
+    "만가시",
+    "철가시의 왕관"
+  ],
+  "선혈": [
+    "선혈",
+    "핏빛",
+    "혈홍",
+    "혈우",
+    "심장혈"
+  ],
+  "분노": [
+    "분노",
+    "격노",
+    "광분",
+    "폭노",
+    "신들의 분노"
+  ],
+  "달빛": [
+    "달빛",
+    "은월",
+    "월광",
+    "만월",
+    "월식의 빛"
+  ],
+  "태양": [
+    "태양",
+    "일광",
+    "황금빛",
+    "정오",
+    "초신성의 빛"
+  ],
+  "부식": [
+    "부식",
+    "녹",
+    "산화",
+    "침식",
+    "만부식"
+  ]
+};
+const ATTR_STYLE = {
+  "대지": {
+    "aura": [
+      "지각",
+      "흙먼지",
+      "암반",
+      "산맥"
+    ],
+    "verbs": [
+      "짓누르는",
+      "깨어나는",
+      "갈라지는"
+    ],
+    "finale": [
+      "심장",
+      "지층",
+      "대륙"
+    ],
+    "tex": [
+      "거친",
+      "묵직한"
+    ]
+  },
+  "바람": {
+    "aura": [
+      "휘파람",
+      "기류",
+      "칼바람",
+      "비상"
+    ],
+    "verbs": [
+      "스치는",
+      "휘감는",
+      "흩어지는"
+    ],
+    "finale": [
+      "광시곡",
+      "태풍",
+      "순환"
+    ],
+    "tex": [
+      "가벼운",
+      "날카로운"
+    ]
+  },
+  "번개": {
+    "aura": [
+      "섬광",
+      "전류",
+      "낙뢰",
+      "진동"
+    ],
+    "verbs": [
+      "튀는",
+      "내리꽂는",
+      "연쇄하는"
+    ],
+    "finale": [
+      "심판",
+      "천둥",
+      "연격"
+    ],
+    "tex": [
+      "따끔한",
+      "그을린"
+    ]
+  },
+  "물": {
+    "aura": [
+      "물결",
+      "청류",
+      "포말",
+      "침잠"
+    ],
+    "verbs": [
+      "흐르는",
+      "삼키는",
+      "쓸어가는"
+    ],
+    "finale": [
+      "해일",
+      "심연",
+      "순환"
+    ],
+    "tex": [
+      "젖은",
+      "미끄러운"
+    ]
+  },
+  "얼음": {
+    "aura": [
+      "서리",
+      "빙결",
+      "결정",
+      "정적"
+    ],
+    "verbs": [
+      "얼리는",
+      "봉인하는",
+      "깨뜨리는"
+    ],
+    "finale": [
+      "영결",
+      "빙벽",
+      "영원"
+    ],
+    "tex": [
+      "차가운",
+      "투명한"
+    ]
+  },
+  "빛": {
+    "aura": [
+      "광휘",
+      "성광",
+      "찬란",
+      "여명"
+    ],
+    "verbs": [
+      "비추는",
+      "정화하는",
+      "가르는"
+    ],
+    "finale": [
+      "왕관",
+      "천상",
+      "증명"
+    ],
+    "tex": [
+      "눈부신",
+      "따뜻한"
+    ]
+  },
+  "축복": {
+    "aura": [
+      "가호",
+      "은총",
+      "성은",
+      "기도"
+    ],
+    "verbs": [
+      "보듬는",
+      "지키는",
+      "인도하는"
+    ],
+    "finale": [
+      "대축복",
+      "성역",
+      "서약"
+    ],
+    "tex": [
+      "포근한",
+      "정결한"
+    ]
+  },
+  "파멸": {
+    "aura": [
+      "붕괴",
+      "몰락",
+      "멸절",
+      "종말"
+    ],
+    "verbs": [
+      "부수는",
+      "무너뜨리는",
+      "끝내는"
+    ],
+    "finale": [
+      "종말",
+      "파편",
+      "재앙"
+    ],
+    "tex": [
+      "금간",
+      "거무죽죽한"
+    ]
+  },
+  "어둠": {
+    "aura": [
+      "암흑",
+      "흑영",
+      "심야",
+      "그림자"
+    ],
+    "verbs": [
+      "삼키는",
+      "잠식하는",
+      "숨기는"
+    ],
+    "finale": [
+      "영야",
+      "심연",
+      "그림자왕"
+    ],
+    "tex": [
+      "차분한",
+      "서늘한"
+    ]
+  },
+  "유혹": {
+    "aura": [
+      "매혹",
+      "향",
+      "속삭임",
+      "눈빛"
+    ],
+    "verbs": [
+      "홀리는",
+      "끌어당기는",
+      "유린하는"
+    ],
+    "finale": [
+      "금단",
+      "심연의 입맞춤",
+      "치명"
+    ],
+    "tex": [
+      "달콤한",
+      "끈적한"
+    ]
+  },
+  "선율": {
+    "aura": [
+      "가락",
+      "화음",
+      "리듬",
+      "협주"
+    ],
+    "verbs": [
+      "울리는",
+      "연주하는",
+      "공명하는"
+    ],
+    "finale": [
+      "대합창",
+      "레퀴엠",
+      "광시곡"
+    ],
+    "tex": [
+      "맑은",
+      "진동하는"
+    ]
+  },
+  "공허": {
+    "aura": [
+      "허무",
+      "무(無)",
+      "공백",
+      "심연"
+    ],
+    "verbs": [
+      "지우는",
+      "비우는",
+      "끊어내는"
+    ],
+    "finale": [
+      "공백",
+      "심연",
+      "무한"
+    ],
+    "tex": [
+      "창백한",
+      "텅 빈"
+    ]
+  },
+  "독": {
+    "aura": [
+      "맹독",
+      "극독",
+      "독혈",
+      "독향"
+    ],
+    "verbs": [
+      "스미는",
+      "타락시키는",
+      "부패시키는"
+    ],
+    "finale": [
+      "만독",
+      "독왕",
+      "혈독"
+    ],
+    "tex": [
+      "시큼한",
+      "끈질긴"
+    ]
+  },
+  "화염": {
+    "aura": [
+      "불꽃",
+      "홍염",
+      "업화",
+      "재"
+    ],
+    "verbs": [
+      "태우는",
+      "그을리는",
+      "폭발하는"
+    ],
+    "finale": [
+      "태초의 불",
+      "업화",
+      "불사조"
+    ],
+    "tex": [
+      "뜨거운",
+      "붉은"
+    ]
+  },
+  "중력": {
+    "aura": [
+      "압력",
+      "인력",
+      "낙하",
+      "중력파"
+    ],
+    "verbs": [
+      "끌어내리는",
+      "압살하는",
+      "휘게하는"
+    ],
+    "finale": [
+      "절대중력",
+      "특이점",
+      "낙하"
+    ],
+    "tex": [
+      "무거운",
+      "짙은"
+    ]
+  },
+  "뿌리": {
+    "aura": [
+      "싹",
+      "근맥",
+      "근원",
+      "세계수"
+    ],
+    "verbs": [
+      "휘감는",
+      "파고드는",
+      "증식하는"
+    ],
+    "finale": [
+      "세계수",
+      "근원",
+      "발아"
+    ],
+    "tex": [
+      "푸른",
+      "질긴"
+    ]
+  },
+  "가시": {
+    "aura": [
+      "자상",
+      "극침",
+      "만가시",
+      "왕관"
+    ],
+    "verbs": [
+      "찔러오는",
+      "긁어내는",
+      "되받아치는"
+    ],
+    "finale": [
+      "가시왕관",
+      "만가시",
+      "응징"
+    ],
+    "tex": [
+      "거친",
+      "날 선"
+    ]
+  },
+  "선혈": {
+    "aura": [
+      "핏빛",
+      "혈홍",
+      "혈우",
+      "심장"
+    ],
+    "verbs": [
+      "흩뿌리는",
+      "베어내는",
+      "물들이는"
+    ],
+    "finale": [
+      "심장혈",
+      "혈제",
+      "진홍"
+    ],
+    "tex": [
+      "따뜻한",
+      "끈끈한"
+    ]
+  },
+  "분노": {
+    "aura": [
+      "격노",
+      "광분",
+      "폭노",
+      "포효"
+    ],
+    "verbs": [
+      "내지르는",
+      "터뜨리는",
+      "짓이기는"
+    ],
+    "finale": [
+      "신들의 분노",
+      "폭발",
+      "심판"
+    ],
+    "tex": [
+      "거친",
+      "뜨거운"
+    ]
+  },
+  "달빛": {
+    "aura": [
+      "은월",
+      "월광",
+      "만월",
+      "월식"
+    ],
+    "verbs": [
+      "비추는",
+      "잠재우는",
+      "유영하는"
+    ],
+    "finale": [
+      "월식",
+      "은빛 서사",
+      "만월"
+    ],
+    "tex": [
+      "차분한",
+      "은은한"
+    ]
+  },
+  "태양": {
+    "aura": [
+      "일광",
+      "황금빛",
+      "정오",
+      "초신성"
+    ],
+    "verbs": [
+      "타오르는",
+      "선명해지는",
+      "내리쬐는"
+    ],
+    "finale": [
+      "초신성",
+      "정오",
+      "황금왕관"
+    ],
+    "tex": [
+      "찬란한",
+      "뜨거운"
+    ]
+  },
+  "부식": {
+    "aura": [
+      "녹",
+      "산화",
+      "침식",
+      "부패"
+    ],
+    "verbs": [
+      "녹이는",
+      "깎아내는",
+      "무너뜨리는"
+    ],
+    "finale": [
+      "만부식",
+      "침식",
+      "산화의 끝"
+    ],
+    "tex": [
+      "삭은",
+      "시큼한"
+    ]
+  }
+};
+
+const TYPE_FLAVOR = {
+  "대검": ["잔향","중심추","지축","회전날","낙하"],
+  "한손검": ["휘파람","한줄기","칼끝","마침표","숨결"],
+  "카타나": ["발도","일섬","참격","선(線)","칼집","잔상"],
+  "활": ["현","비상","깃","시위","호흡"],
+  "창": ["창자루","관통","돌격","장대","직선"],
+  "도끼": ["도끼날","균열","쪼개기","절단","낙차"],
+  "둔기": ["망치머리","충격","진동","울림","낙석"],
+  "빠루": ["빠루","철성분","공사장","뚝배기","생활의 지혜"],
+  "요술봉": ["반짝","변신","리본","별가루","마법진"],
+  "팔루스티프경": ["겸열","충성","기사도","명예","어전"],
+  "레이저총": ["광선","조준","발광","스캔","과열"]
+};
+
+function randInt(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function choice(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function roll(p){ return Math.random() < p; }
+
+// 종성(받침) 판별 + 조사 선택
+function hasBatchim(word){
+  const s = String(word).trim();
+  if(!s) return false;
+  const ch = s[s.length-1];
+  const code = ch.charCodeAt(0);
+  if(code < 0xAC00 || code > 0xD7A3) return false;
+  const jong = (code - 0xAC00) % 28;
+  return jong !== 0;
+}
+function josa(word, a, b){ return hasBatchim(word) ? a : b; }
+
+function weaponNounFromType(type){
+  if(type==="대검" || type==="한손검" || type==="카타나") return "검";
+  if(type==="활") return "활";
+  if(type==="창") return "창";
+  if(type==="도끼") return "도끼";
+  if(type==="둔기") return "둔기";
+  return type;
+}
+
+function ensureNameState(w){
+  if(!w.attr) w.attr = choice(ATTRIBUTES);
+  if(!w.nameHistory) w.nameHistory = {};
+  if(!w.displayName) w.displayName = "";
+  return w;
+}
+
+function attrVariant(attr, enhance){
+  const v = ATTR_VARIANTS[attr] || [attr,attr,attr,attr,attr];
+  if(enhance >= 10) return v[4] || v[v.length-1];
+  if(enhance >= 3)  return v[3] || v[v.length-1];
+  if(enhance === 2) return v[2] || v[v.length-1];
+  if(enhance === 1) return v[1] || v[v.length-1];
+  return v[0] || attr;
+}
+
+function styleFor(attr){
+  return ATTR_STYLE[attr] || {aura:[attr], verbs:["스치는"], finale:["종막"], tex:["낡은"]};
+}
+
+function pickTemplate(attr, enhance){
+  const st = styleFor(attr);
+  // 강화 구간별로 템플릿 풀을 다르게(속성마다 vibe가 st로 갈림)
+  const base0 = [
+    "{T} {A0}의 {N}",
+    "{A0} 흔적이 남은 {F}{N}",
+    "{A0} 냄새가 밴 {N}"
+  ];
+  const base1 = [
+    "{A}{JOBJ} 부르는 {F}{N}",
+    "{A}에 {V} {N}",
+    "{A}의 {U}를 담은 {N}"
+  ];
+  const base2 = [
+    "{A}로 가르는 {N}",
+    "{A}의 결을 타는 {F}{N}",
+    "{A}의 {U}를 벼린 {N}"
+  ];
+  const base3 = [
+    "{A} 일변도의 {N}",
+    "{A}에 길들여진 {F}{N}",
+    "{A}의 {U}을 두른 {N}"
+  ];
+  const base10 = [
+    "{A}의 {FIN}",
+    "{A}로 심판하는 {N}",
+    "{FIN}의 {F}{N}"
+  ];
+  if(enhance >= 10) return choice(base10);
+  if(enhance >= 3) return choice(base3);
+  if(enhance === 2) return choice(base2);
+  if(enhance === 1) return choice(base1);
+  return choice(base0);
+}
+
+function makeDisplayName(w){
+  ensureNameState(w);
+  const N = weaponNounFromType(w.type);
+  const F = choice(TYPE_FLAVOR[w.type] || ["잔향","파편","기억","흔적"]);
+  const st = styleFor(w.attr);
+  const A0 = w.attr;
+  const A = (w.enhance<=0) ? A0 : attrVariant(w.attr, w.enhance);
+  const U = choice(st.aura || [w.attr]);
+  const V = choice(st.verbs || ["스치는"]);
+  const FIN = choice(st.finale || ["종막"]);
+  const T = choice(st.tex || ["낡은"]);
+  const JOBJ = josa(A,"을","를");
+
+  // +0은 “낡은 속성” 느낌을 유지
+  if(w.enhance <= 0){
+    // 속성별 질감 단어를 섞어서 더 그럴듯하게
+    const t0 = choice([
+      `${T} ${A0}의 ${N}`,
+      `${A0} 흔적이 남은 ${F}${N}`,
+      `${A0} 냄새가 밴 ${N}`
+    ]);
+    return t0;
+  }
+
+  const tpl = pickTemplate(w.attr, w.enhance);
+
+  // tpl 내 토큰 치환
+  return tpl
+    .replaceAll("{A0}", A0)
+    .replaceAll("{A}", A)
+    .replaceAll("{N}", N)
+    .replaceAll("{F}", F)
+    .replaceAll("{U}", U)
+    .replaceAll("{V}", V)
+    .replaceAll("{FIN}", FIN)
+    .replaceAll("{T}", T)
+    .replaceAll("{JOBJ}", JOBJ);
+}
+
+function updateDisplayName(w){
+  ensureNameState(w);
+  const k = String(w.enhance);
+  if(!w.nameHistory[k]) w.nameHistory[k] = makeDisplayName(w);
+  w.displayName = w.nameHistory[k];
+}
+
+/* Core state */
+function defaultWeaponStarter(){
+  const w = {
+    id: uuid(),
+    type: "한손검",
+    tier: "일반",
+    enhance: 0,
+    basePower: 100,
+    baseValue: 1000,
+    relicGrade: "낡은",
+    attr: null,
+    nameHistory: null,
+    displayName: "",
+    createdAt: Date.now()
+  };
+  updateDisplayName(w);
+  return w;
+}
+function defaultState(){
+  return {
+    version: APP_VERSION,
+    gold: START_GOLD,
+    scrap: 0,
+    cafeteria: { claims: [], lastAt: 0 },
+    inventory: [ defaultWeaponStarter(), null ],
+    selectedSlot: 0,
+    pvp: { wins:0, losses:0, winStreak:0 },
+    pve: { wins:0, losses:0, cleared:0 },
+    me: { nickname:"플레이어" },
+    npcs: [
+      { nickname:"급식헌터", weaponName:"대검", enhance:1, tierLabel:"일반", basePower:101 },
+      { nickname:"빠루장인", weaponName:"빠루", enhance:3, tierLabel:"특수", basePower:99 },
+      { nickname:"전설미리보기", weaponName:"창", enhance:9, tierLabel:"일반", basePower:100 },
+      { nickname:"레이저충", weaponName:"레이저총", enhance:7, tierLabel:"특수", basePower:97 },
+      { nickname:"고급빌런", weaponName:"도끼", enhance:10, tierLabel:"고급", basePower:100 }
+    ]
+  };
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(!raw) return defaultState();
+    const s = JSON.parse(raw);
+    if(typeof s.gold !== "number" || !Number.isFinite(s.gold) || s.gold <= 0) s.gold = START_GOLD;
+    if(typeof s.scrap !== "number" || !Number.isFinite(s.scrap) || s.scrap < 0) s.scrap = 0;
+    if(!s.cafeteria) s.cafeteria = { claims: [], lastAt: 0 };
+    if(!Array.isArray(s.cafeteria.claims)) s.cafeteria.claims = [];
+    if(typeof s.cafeteria.lastAt !== "number" || !Number.isFinite(s.cafeteria.lastAt)) s.cafeteria.lastAt = 0;
+    if(!Array.isArray(s.inventory)) s.inventory = [defaultWeaponStarter(), null];
+    if(s.selectedSlot !== 0 && s.selectedSlot !== 1) s.selectedSlot = 0;
+    if(!s.pvp) s.pvp = { wins:0, losses:0, winStreak:0 };
+    if(!s.pve) s.pve = { wins:0, losses:0, cleared:0 };
+    if(typeof s.pve.wins !== "number" || !Number.isFinite(s.pve.wins) || s.pve.wins < 0) s.pve.wins = 0;
+    if(typeof s.pve.losses !== "number" || !Number.isFinite(s.pve.losses) || s.pve.losses < 0) s.pve.losses = 0;
+    if(typeof s.pve.cleared !== "number" || !Number.isFinite(s.pve.cleared) || s.pve.cleared < 0) s.pve.cleared = 0;
+
+    if(!s.me) s.me = { nickname:"플레이어" };
+    for(const it of (s.inventory||[])){ if(it){ updateDisplayName(it); } }
+    s.version = APP_VERSION;
+    return s;
+  }catch{
+    return defaultState();
+  }
+}
+function saveState(){ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+/* World chat */
+let autoScroll = true;
+$("toggleAutoScroll").addEventListener("click", ()=>{
+  autoScroll = !autoScroll;
+  $("toggleAutoScroll").textContent = `자동 스크롤: ${autoScroll ? "ON" : "OFF"}`;
+});
+$("clearChat").addEventListener("click", ()=>{ $("chatLog").innerHTML=""; });
+
+function appendChat({ time, text, kind="system" }){
+  const chatLog = $("chatLog");
+  const row = document.createElement("div");
+  row.className = "msg";
+  if(kind === "system" || kind === "success" || kind === "break"){
+    row.innerHTML = `<div class="bubble system ${kind}">[${escapeHtml(time)}] ${escapeHtml(text)}</div>`;
+  }else{
+    row.innerHTML = `<div class="meta">${escapeHtml(time)}</div><div class="bubble">${escapeHtml(text)}</div>`;
+  }
+  chatLog.appendChild(row);
+  if(autoScroll) chatLog.scrollTop = chatLog.scrollHeight;
+}
+const REACTIONS = ["ㅋㅋㅋㅋㅋㅋ","미친…","급식값 뽑았다","와 이걸 이기네","부럽다…","전설이다…","그만해!!","야 그거 터지는 거 아님?"];
+function maybeReaction(){ if(Math.random() < 0.12) appendChat({time:nowHHMM(), kind:"system", text:`💬 ${REACTIONS[Math.floor(Math.random()*REACTIONS.length)]}`}); }
+
+/* Cafeteria */
+const CAF_PAY = 5000;
+const CAF_MAX_PER_24H = 4;
+const CAF_COOLDOWN_MS = 6*60*60*1000;
+
+function normalizeCafeteria(){
+  if(!state.cafeteria) state.cafeteria = { claims: [], lastAt: 0 };
+  if(!Array.isArray(state.cafeteria.claims)) state.cafeteria.claims = [];
+  const now = Date.now();
+  state.cafeteria.claims = state.cafeteria.claims.filter(ts => typeof ts==="number" && ts <= now);
+  if(typeof state.cafeteria.lastAt !== "number" || !Number.isFinite(state.cafeteria.lastAt) || state.cafeteria.lastAt > now) state.cafeteria.lastAt = 0;
+}
+function pruneCafClaims(){
+  normalizeCafeteria();
+  const now = Date.now();
+  state.cafeteria.claims = state.cafeteria.claims.filter(ts => now - ts <= 24*60*60*1000);
+}
+function fmtMs(ms){
+  const s = Math.ceil(ms/1000);
+  const hh = String(Math.floor(s/3600)).padStart(2,"0");
+  const mm = String(Math.floor((s%3600)/60)).padStart(2,"0");
+  const ss = String(s%60).padStart(2,"0");
+  return `${hh}:${mm}:${ss}`;
+}
+function cafeteriaStatus(){
+  pruneCafClaims();
+  const used = state.cafeteria.claims.length;
+  const remaining = Math.max(0, CAF_MAX_PER_24H - used);
+  const now = Date.now();
+  const nextIn = Math.max(0, CAF_COOLDOWN_MS - (now - (state.cafeteria.lastAt||0)));
+  const can = remaining > 0 && nextIn === 0;
+  return {used, remaining, nextIn, can};
+}
+function claimCafeteria(){
+  const st = cafeteriaStatus();
+  if(!st.can){
+    showModal("무료급식소", "아직 받을 수 없어…", `남은 급식 ${st.remaining}/4 · 다음까지 ${fmtMs(st.nextIn)}`, "CAFETERIA");
+    return;
+  }
+  state.gold += CAF_PAY;
+  state.cafeteria.claims.push(Date.now());
+  state.cafeteria.lastAt = Date.now();
+  appendChat({time:nowHHMM(), kind:"system", text:`🍚 무료급식소: +${fmt(CAF_PAY)}G`});
+  maybeReaction();
+  toast(`+${fmt(CAF_PAY)}G`);
+  showModal("무료급식소", `+${fmt(CAF_PAY)}G 지급!`, `남은 급식 ${cafeteriaStatus().remaining}/4`, "CAFETERIA");
+  saveState(); render();
+}
+
+/* Relic / weapon generation */
+const RELIC_GRADES = [
+  { grade:"낡은", p:0.70 },
+  { grade:"빛바랜", p:0.25 },
+  { grade:"봉인된", p:0.05 }
+];
+const RELIC_NOUNS = ["검집","칼날 조각","창자루","활대","도끼날","망치머리","가드","손잡이","파편","부적"];
+const RELIC_ADJ = ["달빛을 머금은","핏자국이 남은","바람이 깃든","검은 재가 묻은","눈물로 젖은","속삭임이 새겨진","금이 간","이명이 울리는","이상하게 반짝이는","도무지 닦이지 않는"];
+function rollRelicGrade(){
+  const r = Math.random(); let acc = 0;
+  for(const g of RELIC_GRADES){ acc += g.p; if(r <= acc) return { grade:g.grade, relicName:`${choice(RELIC_ADJ)} ${choice(RELIC_NOUNS)}`}; }
+  return { grade:"낡은", relicName:`${choice(RELIC_ADJ)} ${choice(RELIC_NOUNS)}` };
+}
+function relicFlavorText(grade){
+  if(grade==="봉인된") return "…손끝이 얼어붙는다. 봉인이 풀리는 소리가 들린다.";
+  if(grade==="빛바랜") return "먼지 속에서 희미한 광택이 번뜩인다. 오래된 기억의 냄새가 난다.";
+  return "낡고 너덜너덜하지만… 어쩐지 손에서 놓기 싫다.";
+}
+
+const TIERS = [
+  { tier:"일반", p:0.82, powerMult:1.00, valueMult:1.00 },
+  { tier:"특수", p:0.15, powerMult:1.01, valueMult:1.60 },
+  { tier:"고급", p:0.03, powerMult:1.04, valueMult:2.20 }
+];
+function pickTierByRelic(grade){
+  let w = { "일반": 0.82, "특수": 0.15, "고급": 0.03 };
+  if(grade==="빛바랜") w = { "일반": 0.72, "특수": 0.23, "고급": 0.05 };
+  if(grade==="봉인된") w = { "일반": 0.55, "특수": 0.30, "고급": 0.15 };
+  const r = Math.random();
+  const a = w["일반"];
+  const b = a + w["특수"];
+  const tierName = (r < a) ? "일반" : (r < b) ? "특수" : "고급";
+  return TIERS.find(t=>t.tier===tierName) || TIERS[0];
+}
+
+const TYPE_TABLE = [
+  { type:"대검", basePower:[98,104], baseValue:[950,1050] },
+  { type:"한손검", basePower:[96,102], baseValue:[950,1050] },
+  { type:"카타나", basePower:[97,103], baseValue:[950,1050] },
+  { type:"활", basePower:[95,101], baseValue:[950,1050] },
+  { type:"창", basePower:[96,102], baseValue:[950,1050] },
+  { type:"도끼", basePower:[97,103], baseValue:[950,1050] },
+  { type:"둔기", basePower:[97,103], baseValue:[950,1050] }
+];
+const HUMOR_TYPES = [
+  { type:"빠루", basePower:[96,102], baseValue:[1000,1200] },
+  { type:"요술봉", basePower:[94,100], baseValue:[900,1100] },
+  { type:"팔루스티프경", basePower:[95,101], baseValue:[1100,1400] },
+  { type:"레이저총", basePower:[93,99], baseValue:[1200,1600] }
+];
+function maybeHumorReplace(tier){
+  const baseChance = 0.02;
+  const extra = (tier.tier === "고급") ? 0.03 : 0.0;
+  if(roll(baseChance + extra)) return choice(HUMOR_TYPES);
+  return null;
+}
+
+function inferForcedTypeFromRelicName(relicName){
+  const s = String(relicName||"");
+  // 가벼운 규칙 기반 매핑(완벽하진 않지만 '활대→활' 같은 기대는 맞춰줌)
+  const rules = [
+    { keys:["활대","활줄","화살","궁"], type:"활" },
+    { keys:["창자루","창끝","창날","창"], type:"창" },
+    { keys:["도끼날","도끼"], type:"도끼" },
+    { keys:["망치머리","철퇴","곤봉","몽둥이","둔기"], type:"둔기" },
+    { keys:["대검","장검"], type:"대검" },
+    { keys:["카타나","발도","일섬","참격","사무라이"], type:"카타나" },
+    { keys:["검집","칼날","검날","검","소드"], type:"한손검" }
+  ];
+  for(const r of rules){
+    for(const k of r.keys){
+      if(s.includes(k)) return r.type;
+    }
+  }
+  return null;
+}
+function generateWeapon({ relicGrade="낡은", relicName=null, forcedType=null } = {}){
+  const tier = pickTierByRelic(relicGrade);
+  const humor = maybeHumorReplace(tier);
+  const inferred = forcedType || inferForcedTypeFromRelicName(relicName);
+  const forced = inferred ? TYPE_TABLE.find(t=>t.type===inferred) : null;
+  const tinfo = humor ? humor : (forced ? forced : choice(TYPE_TABLE));
+  const bp = randInt(tinfo.basePower[0], tinfo.basePower[1]);
+  const bv = randInt(tinfo.baseValue[0], tinfo.baseValue[1]);
+
+  let valueMultBonus = 1.0;
+  let optionText = "";
+  if(tier.tier === "특수" && roll(0.5)){
+    const opt = choice([{name:"금니 박힘",mult:1.15},{name:"상점주가 좋아함",mult:1.25},{name:"도난품 딱지",mult:1.40}]);
+    valueMultBonus = opt.mult; optionText = opt.name;
+  }
+
+  const w = {
+    id: uuid(),
+    type: tinfo.type,
+    tier: tier.tier,
+    enhance: 0,
+    basePower: Math.round(bp * tier.powerMult),
+    baseValue: Math.round(bv * tier.valueMult * valueMultBonus),
+    optionText,
+    relicGrade,
+    attr: null,
+    nameHistory: null,
+    displayName: "",
+    createdAt: Date.now()
+  };
+  updateDisplayName(w);
+  return w;
+}
+
+/* Dig */
+const DIG_COST = 5000;
+function canPay(cost){ return state.gold >= cost; }
+function dig(){
+  const emptyIdx = state.inventory.findIndex(x => x === null);
+  if(emptyIdx < 0){
+    showModal("발굴 불가", "슬롯이 가득 찼다!", "무기를 팔거나(판매) / 터뜨린 뒤 다시 발굴할 수 있어.", "DIG");
+    return;
+  }
+  if(!canPay(DIG_COST)){
+    showModal("골드 부족", "골드가 부족해…", `필요: ${fmt(DIG_COST)}G`, "DIG");
+    return;
+  }
+  state.gold -= DIG_COST;
+
+  const relic = rollRelicGrade();
+  const relicText = relicFlavorText(relic.grade);
+  const w = generateWeapon({ relicGrade: relic.grade, relicName: relic.relicName });
+  state.inventory[emptyIdx] = w;
+
+  appendChat({ time: nowHHMM(), kind:"system", text:`⛏️ 발굴: (${relic.grade} 유물) [${w.tier}] ${w.displayName} 획득! (슬롯 ${emptyIdx+1})` });
+  maybeReaction();
+
+  showModal("유물 발굴",
+    `${relicText}\n${relic.grade} 유물에서 “${relic.relicName}”를 발견했다!`,
+    `감정 결과: [${w.tier}] ${w.displayName}\n속성: ${w.attr} · 타입: ${w.type}`,
+    relic.grade.toUpperCase()
+  );
+
+  saveState(); render();
+}
+
+/* Enhance */
+function enhanceCost(currentPlus){
+  const base = [10,20,50];
+  const k = Math.floor(currentPlus / 3);
+  const r = currentPlus % 3;
+  return base[r] * (10 ** k);
+}
+const PROB = [
+  {s:75,k:22,b:3},{s:72,k:23,b:5},{s:69,k:24,b:7},{s:66,k:25,b:9},{s:63,k:26,b:11},
+  {s:60,k:27,b:13},{s:55,k:29,b:16},{s:50,k:31,b:19},{s:45,k:33,b:22},{s:40,k:35,b:25},
+  {s:35,k:37,b:28},{s:32,k:39,b:29},{s:29,k:41,b:30},{s:26,k:43,b:31},{s:24,k:44,b:32},
+  {s:22,k:45,b:33},{s:20,k:46,b:34},{s:18,k:47,b:35},{s:16,k:49,b:35},{s:15,k:50,b:35},
+  {s:14,k:51,b:35},{s:13,k:52,b:35},{s:12,k:53,b:35},{s:11,k:54,b:35},{s:10,k:55,b:35},
+  {s:9,k:56,b:35},{s:8,k:57,b:35},{s:7,k:58,b:35},{s:7,k:58,b:35},{s:6,k:59,b:35},{s:5,k:60,b:35}
+];
+function rollEnhanceResult(enh){
+  const p = PROB[Math.min(enh, 30)];
+  const r = Math.random()*100;
+  if(r < p.s) return "SUCCESS";
+  if(r < p.s + p.k) return "KEEP";
+  return "BREAK";
+}
+function scrapOnBreak(enh){ if(enh < 10) return 1; if(enh < 20) return 2; return 3; }
+
+let lastWorldPostAt = 0;
+const WORLD_COOLDOWN_MS = 900;
+function postEnhanceWorldLog({ nickname, tierLabel, weaponName, oldEnhance, newEnhance, result }){
+  const t = nowHHMM();
+  const now = Date.now();
+  if(result === "KEEP") return;
+  if(now - lastWorldPostAt < WORLD_COOLDOWN_MS) return;
+  lastWorldPostAt = now;
+
+  if(result === "SUCCESS" && newEnhance >= 10){
+    appendChat({ time:t, kind:"success", text:`🎉 [강화성공] ${nickname}님이 [${tierLabel}] ${weaponName}을(를) +${oldEnhance} → +${newEnhance} 강화!` });
+    maybeReaction();
+  }
+  if(result === "BREAK" && oldEnhance >= 10){
+    const sc = scrapOnBreak(oldEnhance);
+    appendChat({ time:t, kind:"break", text:`💥 [강화터짐] ${nickname}님의 [${tierLabel}] ${weaponName}(+${oldEnhance}) 산화… (고철조각 +${sc})` });
+    maybeReaction();
+  }
+}
+
+function enhanceSelected(){
+  const idx = state.selectedSlot;
+  const w = state.inventory[idx];
+  if(!w){ showModal("강화", "슬롯이 비어있어!", "강화할 무기가 없어.", "ENHANCE"); return; }
+
+  const cost = enhanceCost(w.enhance);
+  if(!canPay(cost)){ showModal("강화", "골드가 부족해…", `필요: ${fmt(cost)}G`, "ENHANCE"); return; }
+
+  state.gold -= cost;
+  const old = w.enhance;
+  const result = rollEnhanceResult(old);
+
+  if(result === "SUCCESS"){
+    w.enhance += 1;
+    updateDisplayName(w);
+    appendChat({ time: nowHHMM(), kind:"system", text:`✨ 강화 성공! +${old} → +${w.enhance} (비용 -${fmt(cost)}G)` });
+    showModal("강화 성공", `+${old} → +${w.enhance}`, `무기명: ${w.displayName}\n속성: ${w.attr}`, "SUCCESS");
+    postEnhanceWorldLog({ nickname: state.me.nickname, tierLabel: w.tier, weaponName: w.displayName, oldEnhance: old, newEnhance: w.enhance, result:"SUCCESS" });
+  } else if(result === "KEEP"){
+    appendChat({ time: nowHHMM(), kind:"system", text:`😶 강화 유지… (+${old} 그대로) (비용 -${fmt(cost)}G)` });
+    showModal("강화 유지", `+${old} 유지`, `무기명: ${w.displayName}`, "KEEP");
+  } else {
+    const sc = scrapOnBreak(old);
+    state.scrap += sc;
+    state.inventory[idx] = null;
+    appendChat({ time: nowHHMM(), kind:"system", text:`💥 강화 실패! 무기가 산화… (고철 +${sc}) (비용 -${fmt(cost)}G)` });
+    showModal("강화 실패", "무기가 산화했다…", `고철 +${sc}`, "BREAK");
+    postEnhanceWorldLog({ nickname: state.me.nickname, tierLabel: w.tier, weaponName: w.displayName, oldEnhance: old, result:"BREAK" });
+  }
+
+  saveState(); render();
+}
+
+/* Sell */
+function sellSelected(){
+  const idx = state.selectedSlot;
+  const w = state.inventory[idx];
+  if(!w){ showModal("판매", "팔 무기가 없어!", "", "SELL"); return; }
+  let sale = Math.round(w.baseValue * (1 + w.enhance * 0.57));
+  if(w.enhance >= 7) sale = Math.max(sale, 5000);
+
+  state.gold += sale;
+  appendChat({ time: nowHHMM(), kind:"system", text:`🏷️ 판매: [${w.tier}] ${w.displayName}(+${w.enhance}) → +${fmt(sale)}G` });
+  showModal("판매 완료", `+${fmt(sale)}G`, `${w.displayName} (속성: ${w.attr})`, "SELL");
+  state.inventory[idx] = null;
+  saveState(); render();
+}
+
+/* PVP */
+const PVP_BASE_REWARD = 4000;
+function tierMultGold(tierLabel){ if(tierLabel==="특수") return 1.4; if(tierLabel==="고급") return 1.8; return 1.0; }
+function enhanceMultGold(oppEnhance){ return 1 + 0.10 * Math.max(0, oppEnhance - 1); }
+function computePvpWinReward({ oppEnhance, oppTierLabel }){ return Math.round(PVP_BASE_REWARD * enhanceMultGold(oppEnhance) * tierMultGold(oppTierLabel)); }
+function tierMultPower(tierLabel){ if(tierLabel==="특수") return 1.01; if(tierLabel==="고급") return 1.04; return 1.0; }
+function enhanceMultPower(enh){ return 1 + 0.04 * enh; }
+function computePower({ basePower, enhance, tierLabel }){ return basePower * enhanceMultPower(enhance) * tierMultPower(tierLabel); }
+function computeWinProb(myPower, oppPower){
+  const ratio = (myPower - oppPower) / (myPower + oppPower);
+  let p = 0.5 + ratio * 0.90;
+  return clamp(0.20, p, 0.80);
+}
+function loadFriends(){ try{ const raw=localStorage.getItem(FRIENDS_KEY); return raw?JSON.parse(raw):[]; }catch{ return []; } }
+function saveFriends(list){ localStorage.setItem(FRIENDS_KEY, JSON.stringify(list)); }
+function buildOpponentPool(){
+  const friends = loadFriends();
+  return [...friends, ...(state.npcs||[])];
+}
+let lastOppNickname = null;
+function pickRandomOpponent(pool){
+  if(!pool.length) return null;
+  let opp = pool[Math.floor(Math.random()*pool.length)];
+  if(pool.length>=2 && opp.nickname===lastOppNickname){
+    let tries=3;
+    while(tries-- > 0 && opp.nickname===lastOppNickname){
+      opp = pool[Math.floor(Math.random()*pool.length)];
+    }
+  }
+  lastOppNickname = opp.nickname;
+  return opp;
+}
+/* Battle Cast (PVP 중계 로그) */
+const BATTLE_ACTIONS = [
+  "{WPN}{J} 휘둘러 돌진했다",
+  "{WPN}{J} 뽑아 들고, 현실을 재단했다",
+  "{WPN}{J} 들어 올려 천명을 선포했다",
+  "{WPN}{J} 울려 시공간을 흔들었다",
+  "{WPN}{J} 가볍게 휘두르자, 잔상이 하늘을 갈랐다",
+  "{WPN}{J} 쥐고 한 줄의 섭리를 새겼다",
+  "{WPN}{J} 겨누자, 공명이 폭주했다",
+  "{WPN}{J} 휘감아 폭풍처럼 몰아쳤다"
+];
+const BATTLE_FATES = [
+  "상대가 폭발과 함께 재가 되어 사라졌다",
+  "상대의 존재 자체가 섭리에 의해 수정되었다",
+  "상대는 시공간 초월 섭리에 의해 존재와 비존재가 동시에 '로그아웃'되었다",
+  "상대는 만물의 진실에 압도되어 존재 가출!",
+  "상대는 눈 깜짝할 새에 형체를 잃고 허공에 녹아들었다",
+  "상대는 마지막 비명을 남기고 전장 기록에서 삭제되었다"
+];
+
+function fmtAt(nick){ return nick?.startsWith("@") ? nick : "@"+nick; }
+function pvpWeaponLabel(nick, enhance, weaponName){
+  const wn = weaponName || "이름없는 무기";
+  return `${fmtAt(nick)} 『[+${enhance}] ${wn}』`;
+}
+function buildBattleCast({ winnerNick, winnerEnh, winnerWeapon, loserNick, loserEnh, loserWeapon, reward }){
+  const wpn = winnerWeapon || "무기";
+  const act = choice(BATTLE_ACTIONS)
+    .replaceAll("{WPN}", wpn)
+    .replaceAll("{J}", josa(wpn, "을", "를"));
+  const fate = choice(BATTLE_FATES);
+
+  const header = `〖🎙️ 배틀 중계〗 ${pvpWeaponLabel(winnerNick, winnerEnh, winnerWeapon)} VS ${pvpWeaponLabel(loserNick, loserEnh, loserWeapon)}`;
+  const fight = `[⚔️전투] 승자, ${act}! → ${fate}!`;
+  const result = `[🏆결과] ${fmtAt(winnerNick)}님 승리! 💰전리품 ${fmt(reward)}G를 획득하였습니다.`;
+  return `${header}\n\n${fight}\n\n${result}`;
+}
+
+const PVE_ACTIONS_WIN = [
+  "{ME}가 {WPN}{J} 뽑아 들고 돌진! → {MON}의 {PART}을(를) 꿰뚫었다!",
+  "{ME}의 {ATTR} 기운이 {WPN}에 실린다! → {MON}은(는) {FATE}!",
+  "{ME}가 {WPN}을(를) 휘둘러 '{SKILL}'! → {MON}이(가) {FATE}!",
+  "{ME}의 {WPN}이(가) {SFX}… → {MON}은(는) 순식간에 {FATE}!"
+];
+const PVE_ACTIONS_LOSE = [
+  "{MON}이(가) {ME}에게 달려들어 {SFX}! → {ME}는(은) 한 발 물러섰다…",
+  "{MON}의 {ATTR} 기운이 폭주! → {ME}의 {WPN}이(가) {PART}에서 금이 갔다!",
+  "{MON}이(가) '{SKILL}'! → {ME}는(은) 속수무책으로 {FATE_LOSE}…",
+  "{ME}의 공격이 빗나간 순간, {MON}이(가) {SFX}! → 전세가 뒤집혔다!"
+];
+const PVE_PARTS = ["팔","다리","심장","등","목","눈","어깨","옆구리"];
+const PVE_FATES = ["재가 되어 사라졌다", "먼지가 되어 흩어졌다", "시공간에 말려들었다", "빛으로 산화했다", "흔적도 없이 증발했다"];
+const PVE_FATES_LOSE = ["쓰러졌다", "정신이 아득해졌다", "무릎을 꿇었다", "도망칠 틈도 없었다"];
+const PVE_SFX = ["폭발과 함께", "섬광과 함께", "검은 연기와 함께", "전류가 튀며", "바람이 찢기며", "공기가 울리며"];
+const PVE_SKILLS = ["일격필살", "난도질", "심장꿰기", "천둥베기", "월광참", "중력붕괴", "가시폭풍", "선혈의 춤"];
+
+function buildPveCast({ meNick, weapon, stage, win, gold, times=1, wins=0, loses=0 }){
+  const me = fmtAt(meNick || "플레이어");
+  const mon = stage?.name || "정체불명의 적";
+  const wpn = weapon?.displayName || weapon?.name || "무기";
+  const enh = weapon?.enhance ?? 0;
+
+  const header = `〖🎙️ 사냥 중계〗 ${me} 『[+${enh}] ${wpn}』 VS 『${mon}』`;
+
+  if(times > 1){
+    const fight = `[⚔️전투] ${choice(PVE_SFX)} 난전이 이어졌다… (x${times})`;
+    const result = `[🏆결과] ${wins}승 / ${loses}패 · 💰총 전리품 ${fmt(gold)}G`;
+    return `${header}\n\n${fight}\n\n${result}`;
+  }
+
+  const attr = (weapon?.attrName || weapon?.attr || stage?.attr || "기괴한");
+  const actionTmpl = win ? choice(PVE_ACTIONS_WIN) : choice(PVE_ACTIONS_LOSE);
+  const action = actionTmpl
+    .replaceAll("{ME}", me)
+    .replaceAll("{WPN}", wpn)
+    .replaceAll("{J}", josa(wpn, "을", "를"))
+    .replaceAll("{MON}", mon)
+    .replaceAll("{ATTR}", attr)
+    .replaceAll("{PART}", choice(PVE_PARTS))
+    .replaceAll("{FATE}", choice(PVE_FATES))
+    .replaceAll("{FATE_LOSE}", choice(PVE_FATES_LOSE))
+    .replaceAll("{SFX}", choice(PVE_SFX))
+    .replaceAll("{SKILL}", choice(PVE_SKILLS));
+
+  const fight = `[⚔️전투] ${action}`;
+  const result = win
+    ? `[🏆결과] ${meNick || "플레이어"}님 승리! 💰전리품 ${fmt(gold)}G를 획득하였습니다.`
+    : `[🏆결과] ${meNick || "플레이어"}님 패배… 💰전리품 0G`;
+
+  return `${header}\n\n${fight}\n\n${result}`;
+}
+function simulatePvp(){
+  const w = state.inventory[state.selectedSlot];
+  if(!w){ showModal("PVP", "PVP할 무기가 없어!", "슬롯에 무기가 있어야 해.", "PVP"); return; }
+
+  const pool = buildOpponentPool();
+  const opp = pickRandomOpponent(pool);
+  if(!opp){ showModal("PVP", "상대 풀이 비었어!", "친구를 등록하거나 NPC를 기다려줘.", "PVP"); return; }
+
+  const myPower = computePower({basePower:w.basePower, enhance:w.enhance, tierLabel:w.tier});
+  const oppPower = computePower({basePower:opp.basePower, enhance:opp.enhance, tierLabel:opp.tierLabel});
+  const winProb = computeWinProb(myPower, oppPower);
+  const win = Math.random() < winProb;
+
+  if(win){
+    state.pvp.wins += 1;
+    state.pvp.winStreak += 1;
+    const reward = computePvpWinReward({ oppEnhance: opp.enhance, oppTierLabel: opp.tierLabel });
+    state.gold += reward;
+
+    const cast = buildBattleCast({
+      winnerNick: state.me.nickname,
+      winnerEnh: w.enhance,
+      winnerWeapon: w.displayName,
+      loserNick: opp.nickname,
+      loserEnh: opp.enhance,
+      loserWeapon: opp.weaponName || opp.weaponDisplayName || opp.weapon || opp.weaponLabel || "상대 무기",
+      reward
+    });
+    appendChat({ time: nowHHMM(), kind:"battle", text: cast });
+
+    if(w.enhance >= 10 || opp.enhance >= 10 || opp.tierLabel==="고급" || reward >= 8000 || [3,5,7,10].includes(state.pvp.winStreak)){
+      maybeReaction();
+    }
+    showModal("PVP 승리", `+${fmt(reward)}G`, `${opp.nickname} [${opp.tierLabel}] +${opp.enhance} 상대로 승리! (${Math.round(winProb*100)}% 확률)`, "PVP");
+  }else{
+    state.pvp.losses += 1;
+    state.pvp.winStreak = 0;
+
+    // 상대가 얻는 전리품(연출용). 내 골드에는 영향 없음.
+    const oppReward = computePvpWinReward({ oppEnhance: w.enhance, oppTierLabel: w.tier });
+
+    const cast = buildBattleCast({
+      winnerNick: opp.nickname,
+      winnerEnh: opp.enhance,
+      winnerWeapon: opp.weaponName || opp.weaponDisplayName || opp.weapon || opp.weaponLabel || "상대 무기",
+      loserNick: state.me.nickname,
+      loserEnh: w.enhance,
+      loserWeapon: w.displayName,
+      reward: oppReward
+    });
+    appendChat({ time: nowHHMM(), kind:"battle", text: cast });
+
+    if(w.enhance >= 10 || opp.enhance >= 10 || opp.tierLabel==="고급" || oppReward >= 8000){
+      maybeReaction();
+    }
+    showModal("PVP 패배", "보상 0G", `${opp.nickname}에게 졌다… (${Math.round(winProb*100)}% 승률)`, "PVP");
+  }
+  saveState(); render();
+}
+
+
+/* PVE */
+const PVE_STAGES = [{"stageId": "stage 1-1", "monsterId": "M001", "name": "들개", "tier": "잡몹", "baseHp": 100, "baseAtk": 10, "rewardMin": 800, "rewardMax": 1200, "dropTableId": "DT_1_1", "flavor": "흔히 길에서 볼 수 있는 개. 약하지만 당신이 이길 수 있을지는 모른다."}, {"stageId": "stage 1-2", "monsterId": "M002", "name": "양아치 뉴비", "tier": "잡몹", "baseHp": 110, "baseAtk": 12, "rewardMin": 1000, "rewardMax": 1400, "dropTableId": "DT_1_2", "flavor": "어제 갓 입문한 양아치. 오늘부터 형님을 위해 산다."}, {"stageId": "stage 1-3", "monsterId": "M003", "name": "에로슬라임", "tier": "잡몹", "baseHp": 120, "baseAtk": 14, "rewardMin": 1200, "rewardMax": 1600, "dropTableId": "DT_1_3", "flavor": "모험가의 옷을 녹이기 위해 살아가는 슬라임. 강해지지 않는 이유에서, 그의 미학이 느껴진다.\n\"약한 슬라임에게 당하는 당황한 눈빛에서 느껴지는 그 굴욕이 제 미식이랄까요.\""}, {"stageId": "stage 1-4", "monsterId": "M004", "name": "쁘띠골렘", "tier": "잡몹", "baseHp": 130, "baseAtk": 16, "rewardMin": 1400, "rewardMax": 1800, "dropTableId": "DT_1_4", "flavor": "개천을 타고 흘러내린 희미한 마력이 진흙에 깃들어 태어났다.\n미소녀 피규어의 모습으로 인간을 유혹한다."}, {"stageId": "stage 1-5", "monsterId": "M005", "name": "팔뚝만한 쥐", "tier": "잡몹", "baseHp": 140, "baseAtk": 18, "rewardMin": 1600, "rewardMax": 2000, "dropTableId": "DT_1_5", "flavor": "\"아니 글쎄 지가 두눈으로 똑똑이 봣슈, 쥐가 팔뚝만했당께요?\""}, {"stageId": "stage 1-6", "monsterId": "M006", "name": "양아치 올드비", "tier": "잡몹", "baseHp": 150, "baseAtk": 20, "rewardMin": 1800, "rewardMax": 2200, "dropTableId": "DT_1_6", "flavor": "어제 양아치 뉴비가 새로 들어와서, 오늘부터는 꼬붕이 생겼다.\n앗싸 조쿠나!"}, {"stageId": "stage 1-7", "monsterId": "M007", "name": "국밥충", "tier": "잡몹", "baseHp": 160, "baseAtk": 22, "rewardMin": 2000, "rewardMax": 2400, "dropTableId": "DT_1_7", "flavor": "\"국밥이야 말로 최고의 가성비다\"를 외치며, 매일 ㅇㅇ할 돈이면 국밥이 몇그릇인지 계산해준다. 솔직히 요즘 국밥, 가성비에서는 좀 벗어났다."}, {"stageId": "stage 1-8", "monsterId": "M008", "name": "닭다리빌런", "tier": "잡몹", "baseHp": 170, "baseAtk": 24, "rewardMin": 2200, "rewardMax": 2600, "dropTableId": "DT_1_8", "flavor": "언제나 그는 닭다리를 두 개 집는다. 닭에게 다리는 두개이기 때문이다.\n참고로 그는 친구가 없다."}, {"stageId": "stage 1-9", "monsterId": "M009", "name": "뚝배기의 정령", "tier": "잡몹", "baseHp": 180, "baseAtk": 26, "rewardMin": 2400, "rewardMax": 2800, "dropTableId": "DT_1_9", "flavor": "국밥충보다 강하다! 이 뚝배기를 제압하여 국밥으로 끓여먹으면 아주 맛있다."}, {"stageId": "stage 1-10", "monsterId": "M010", "name": "강화에 실패한 자", "tier": "정예", "baseHp": 220, "baseAtk": 30, "rewardMin": 3000, "rewardMax": 3500, "dropTableId": "DT_1_10", "flavor": "\"씨발, 이게 니 미래야.\"\n무기 였던 것…을 들고 그는 당신을 노려본다."}, {"stageId": "stage 2-1", "monsterId": "M011", "name": "뿡아치", "tier": "잡몹", "baseHp": 220, "baseAtk": 25, "rewardMin": 2500, "rewardMax": 2900, "dropTableId": "DT_2_1", "flavor": "어디가서 방귀좀 뀐다는 양아치. 그래서 별명이 뿡뿡이가 되었다.\n그래봤자 양아치다. 그래도 동생들에게 밥은 잘 사준다."}, {"stageId": "stage 2-2", "monsterId": "M012", "name": "서른 살에 중2병에 걸린 자", "tier": "잡몹", "baseHp": 240, "baseAtk": 27, "rewardMin": 2700, "rewardMax": 3100, "dropTableId": "DT_2_2", "flavor": "\"왼팔에.. 흑염룡이.. 킄, 날뛰는군… 훗.\" 라고 말하며 스스로 조금 부끄러워한다."}, {"stageId": "stage 2-3", "monsterId": "M013", "name": "중3", "tier": "잡몹", "baseHp": 260, "baseAtk": 29, "rewardMin": 2900, "rewardMax": 3300, "dropTableId": "DT_2_3", "flavor": "중학교 3학년이다. 중2병에 걸린 30살보다는 강하다. 그들은 팩트로 패기 때문."}, {"stageId": "stage 2-4", "monsterId": "M014", "name": "태권도장 품띠생", "tier": "잡몹", "baseHp": 280, "baseAtk": 31, "rewardMin": 3100, "rewardMax": 3500, "dropTableId": "DT_2_4", "flavor": "품띠를 따기 위해 3개월간 무던히 노력했다. 이제 태극 8장은 조빱이고, 고려품새를 배운다."}, {"stageId": "stage 2-5", "monsterId": "M015", "name": "닭꼬치파", "tier": "잡몹", "baseHp": 300, "baseAtk": 33, "rewardMin": 3300, "rewardMax": 3700, "dropTableId": "DT_2_5", "flavor": "꼬치 중 제일 맛있는 것은 닭꼬치라고 말하고 다닌다. \n탕후루를 들고다니며… 그건 유행 지났어 이녀석아! 눈치 챙겨!"}, {"stageId": "stage 2-6", "monsterId": "M016", "name": "태권도장 검은띠생", "tier": "잡몹", "baseHp": 320, "baseAtk": 35, "rewardMin": 3500, "rewardMax": 3900, "dropTableId": "DT_2_6", "flavor": "갓 2품에 오른 검은띠 뉴비. 하지만 그의 금강품새는 김두한도 긴장할지도…!"}, {"stageId": "stage 2-7", "monsterId": "M017", "name": "양꼬치파", "tier": "잡몹", "baseHp": 340, "baseAtk": 37, "rewardMin": 3700, "rewardMax": 4100, "dropTableId": "DT_2_7", "flavor": "사실 이녀석은 양꼬치를 그렇게까지는 좋아하지 않는다.\n그냥 닭꼬치 다이스키 하는 '그 녀석' 과 투닥거리는게 재밌을 뿐… 그래서 너네 언제사귀냐?"}, {"stageId": "stage 2-8", "monsterId": "M018", "name": "태권도 사범님", "tier": "잡몹", "baseHp": 360, "baseAtk": 39, "rewardMin": 3900, "rewardMax": 4300, "dropTableId": "DT_2_8", "flavor": "4범. 네마리 호랑이가 달려와도 이길 수 있다… 는 소문이 있는 태권도장 사범님. 제법 강하다."}, {"stageId": "stage 2-9", "monsterId": "M019", "name": "운 좋은 강화 중독자", "tier": "정예", "baseHp": 400, "baseAtk": 42, "rewardMin": 4200, "rewardMax": 4600, "dropTableId": "DT_2_9", "flavor": "말도 안되는 운으로 여태 가챠 비용을 마누라에게 들키지 않은 아저씨.\n약점은 \"사모님께 일름보합니다?\""}, {"stageId": "stage 2-10", "monsterId": "M020", "name": "고블린", "tier": "정예", "baseHp": 420, "baseAtk": 45, "rewardMin": 4500, "rewardMax": 5000, "dropTableId": "DT_2_10", "flavor": "고블린 미만 잡것들은 조아려라. 이 구역에서 가장 강하다이잇!"}];
+
+function stageMonsterPower(stage){
+  const elite = stage.tier === "정예" ? 55 : 0;
+  // 대충 비슷한 스케일로 맞춘 전투력(튜닝 포인트)
+  return stage.baseAtk * 9 + stage.baseHp * 0.20 + elite;
+}
+function randRange(a,b){ return Math.floor(a + Math.random()*(b-a+1)); }
+
+function ensurePveState(){
+  if(!state.pve) state.pve = { wins:0, losses:0, cleared:0 };
+  if(typeof state.pve.wins !== "number") state.pve.wins = 0;
+  if(typeof state.pve.losses !== "number") state.pve.losses = 0;
+  if(typeof state.pve.cleared !== "number") state.pve.cleared = 0;
+}
+
+function buildStageOptions(){
+  const sel = $("pveStageSelect");
+  if(!sel) return;
+  ensurePveState();
+
+  // 선택값 유지 (기존엔 매번 초기화되어 스테이지가 바뀌지 않는 문제가 있었음)
+  const prev = sel.value;
+
+  sel.innerHTML = "";
+  const maxIdx = Math.min(PVE_STAGES.length-1, state.pve.cleared + 1); // 다음 스테이지까지 오픈
+  PVE_STAGES.forEach((st, i)=>{
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    const lock = i > maxIdx;
+    opt.disabled = lock;
+    opt.textContent = lock ? `🔒 ${st.stageId}` : `${st.stageId} · ${st.name} (${st.tier})`;
+    sel.appendChild(opt);
+  });
+
+  // 이전 선택을 우선 복원, 불가하면 현재 클리어 지점으로
+  let nextVal = (prev !== null && prev !== undefined && prev !== "") ? prev : String(Math.min(state.pve.cleared, PVE_STAGES.length-1));
+  sel.value = nextVal;
+  if(sel.selectedOptions && sel.selectedOptions[0] && sel.selectedOptions[0].disabled){
+    sel.value = String(Math.min(state.pve.cleared, PVE_STAGES.length-1));
+  }
+}
+
+function renderPve(){
+  if(!$("pveStageSelect")) return;
+  ensurePveState();
+  $("pveStat").textContent = `전적: ${state.pve.wins}승-${state.pve.losses}패 · 진행: ${Math.min(state.pve.cleared+1, PVE_STAGES.length)}/${PVE_STAGES.length}`;
+  buildStageOptions();
+  const idx = parseInt($("pveStageSelect").value || "0", 10);
+  const st = PVE_STAGES[clamp(0, idx, PVE_STAGES.length-1)];
+  setPvePortrait(st);
+  const mp = stageMonsterPower(st);
+  $("pveInfo").textContent = `${st.flavor.split("\n")[0] || ""} · 보상 ${fmt(st.rewardMin)}~${fmt(st.rewardMax)}G · 전투력≈${Math.round(mp)}`;
+}
+
+
+function ensurePveLog(){
+  if(!state.pveLog || !Array.isArray(state.pveLog)) state.pveLog = [];
+}
+function setPvePortrait(st){
+  const slot = $("pvePortraitSlot");
+  if(!slot) return;
+  // 이미지가 없으니 텍스트로만 자리 확보
+  slot.textContent = `${st.name} · (${st.tier})  —  [포트레이트 영역]`;
+}
+function appendPveLogLine(text, kind="system"){
+  if(!$("pveLog")) return;
+  ensurePveState();
+  ensurePveLog();
+  state.pveLog.push({ time: nowHHMM(), kind, text });
+  const LIM = 120;
+  if(state.pveLog.length > LIM) state.pveLog.splice(0, state.pveLog.length - LIM);
+  renderPveLog();
+}
+function renderPveLog(){
+  const el = $("pveLog");
+  if(!el) return;
+  ensurePveState();
+  ensurePveLog();
+  el.innerHTML = state.pveLog.map(x=>{
+    return `<div class="line"><span class="t">[${escapeHtml(x.time)}]</span>${escapeHtml(x.text).replace(/\n/g,"<br>")}</div>`;
+  }).join("");
+  el.scrollTop = el.scrollHeight;
+}
+
+function pveOneRun(stageIdx, weapon){
+  const st = PVE_STAGES[stageIdx];
+  const myPower = computePower({ basePower: weapon.basePower, enhance: weapon.enhance, tierLabel: weapon.tier });
+  const oppPower = stageMonsterPower(st);
+  // PVE는 변동폭을 살짝 넓힘
+  const p = clamp(0.15, computeWinProb(myPower, oppPower), 0.85);
+  const win = Math.random() < p;
+
+  if(win){
+    const g = randRange(st.rewardMin, st.rewardMax);
+    state.gold += g;
+    state.pve.wins += 1;
+    if(stageIdx > state.pve.cleared) state.pve.cleared = stageIdx;
+
+    // 부가 드랍(가벼운 맛)
+    let bonus = "";
+    // 정예는 고철이 더 잘 나옴
+    const scrapChance = st.tier==="정예" ? 0.35 : 0.22;
+    if(Math.random() < scrapChance){
+      const sc = st.tier==="정예" ? randRange(2,4) : randRange(1,2);
+      state.scrap += sc;
+      bonus += ` · 고철 +${sc}`;
+    }
+    // 아주 낮은 확률로 '무료 발굴' (빈 슬롯이 있을 때만)
+    const freeDigChance = st.tier==="정예" ? 0.06 : 0.03;
+    if(Math.random() < freeDigChance){
+      const emptyIdx = state.inventory.findIndex(x=>x===null);
+      if(emptyIdx >= 0){
+        const relic = rollRelicGrade();
+        const w = generateWeapon({ relicGrade: relic.grade, relicName: relic.relicName });
+        state.inventory[emptyIdx] = w;
+        bonus += ` · 🎁 전리품: [${w.tier}] ${w.displayName}(+0)`;
+      } else {
+        bonus += " · 🎁 전리품: (슬롯 가득) 놓쳤다…";
+      }
+    }
+
+    appendChat({ time: nowHHMM(), kind:"system", text:`🐾 사냥 승리! ${st.stageId} · ${st.name} → +${fmt(g)}G${bonus}` });
+    return { win:true, gold:g, bonus };
+  } else {
+    state.pve.losses += 1;
+    appendChat({ time: nowHHMM(), kind:"system", text:`💀 사냥 패배… ${st.stageId} · ${st.name} (보상 0G)` });
+    return { win:false, gold:0, bonus:"" };
+  }
+}
+
+async function pveHunt(times=1){
+  const w = state.inventory[state.selectedSlot];
+  if(!w){ showModal("PVE", "사냥할 무기가 없어!", "슬롯에 무기를 넣어줘.", "PVE"); return; }
+  ensurePveState();
+  const idx = parseInt($("pveStageSelect").value || "0", 10);
+  const stageIdx = clamp(0, idx, PVE_STAGES.length-1);
+
+  const st = PVE_STAGES[stageIdx];
+  setPvePortrait(st);
+  const title = `조우: ${st.name}`;
+  const body = st.flavor || "…";
+  await showModal(title, body, `스테이지: ${st.stageId} · ${st.tier}`, "PVE");
+
+  let wins=0, loses=0, gold=0;
+  for(let i=0;i<times;i++) {
+    const r = pveOneRun(stageIdx, w);
+    gold += r.gold;
+    if(r.win) wins++; else loses++;
+  }
+  appendPveLogLine(buildPveCast({ meNick: state.me.nickname, weapon: w, stage: st, win: (wins>0), gold, times, wins, loses }), "battle");
+saveState(); render();
+  renderPve();
+
+  const resultTitle = times===1 ? (wins? "사냥 승리" : "사냥 패배") : `빠른 사냥 결과 (x${times})`;
+  const resultBody = times===1
+    ? (wins ? `보상 +${fmt(gold)}G` : "보상 0G")
+    : `승리 ${wins}회 / 패배 ${loses}회\n총 보상 +${fmt(gold)}G`;
+  showModal(resultTitle, resultBody, `무기: [${w.tier}] ${w.displayName}(+${w.enhance})`, "PVE");
+}
+
+/* Friends UI */
+function renderFriendsList(){
+  const el = $("friendsList");
+  if(!el) return;
+  const list = loadFriends();
+  if(list.length === 0){
+    el.innerHTML = `<div class="mini" style="opacity:.75">등록된 친구가 없습니다. 위 폼에서 추가해줘!</div>`;
+    return;
+  }
+  el.innerHTML = list.map((f, idx) => `
+    <div class="friend-card">
+      <div>
+        <div class="friend-line1">${escapeHtml(f.nickname)}</div>
+        <div class="friend-line2">[${escapeHtml(f.tierLabel)}] ${escapeHtml(f.weaponName)} (+${f.enhance})</div>
+        <div class="friend-line3">basePower ${f.basePower}${f.note?(" · "+escapeHtml(f.note)):""}</div>
+      </div>
+      <div class="friend-actions">
+        <button class="btn small" data-action="edit" data-idx="${idx}">수정</button>
+        <button class="btn small danger" data-action="delete" data-idx="${idx}">삭제</button>
+      </div>
+    </div>
+  `).join("");
+  el.querySelectorAll("button[data-action]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const action = btn.dataset.action;
+      const idx = Number(btn.dataset.idx);
+      if(action==="delete"){
+        const list = loadFriends();
+        list.splice(idx,1);
+        saveFriends(list);
+        renderFriendsList();
+      }else{
+        const f = loadFriends()[idx];
+        $("fNick").value = f.nickname;
+        $("fWeapon").value = f.weaponName;
+        $("fTier").value = f.tierLabel;
+        $("fEnh").value = f.enhance;
+        $("fBase").value = f.basePower;
+        $("fNote").value = f.note || "";
+        $("friendForm").dataset.editing = String(idx);
+        toast("수정 모드");
+      }
+    });
+  });
+}
+if($("friendForm")) $("friendForm").addEventListener("submit",(e)=>{
+  e.preventDefault();
+  const friend = {
+    nickname: $("fNick").value.trim().slice(0,12),
+    weaponName: $("fWeapon").value.trim().slice(0,18),
+    tierLabel: $("fTier").value,
+    enhance: clamp(0, Number($("fEnh").value||0), 30),
+    basePower: clamp(80, Number($("fBase").value||100), 140),
+    note: $("fNote").value.trim().slice(0,24)
+  };
+  if(!friend.nickname || !friend.weaponName){ toast("닉/무기명을 채워줘!"); return; }
+  const list = loadFriends();
+  const editing = $("friendForm").dataset.editing;
+  if(editing !== undefined && editing !== ""){
+    list[Number(editing)] = friend;
+    delete $("friendForm").dataset.editing;
+    toast("수정 완료!");
+  }else{
+    list.push(friend);
+    toast("친구 추가!");
+  }
+  saveFriends(list);
+  $("friendForm").reset();
+  $("fEnh").value = 1;
+  $("fBase").value = 100;
+  renderPveLog();
+});
+if($("exportFriends")) $("exportFriends").addEventListener("click", async ()=>{
+  const data = JSON.stringify(loadFriends(), null, 2);
+  try{ await navigator.clipboard.writeText(data); toast("클립보드에 복사!"); }
+  catch{ prompt("복사해서 저장해줘:", data); }
+});
+if($("importFriends")) $("importFriends").addEventListener("click", ()=>{
+  const json = prompt("붙여넣을 친구 목록 JSON:");
+  if(!json) return;
+  try{
+    const list = JSON.parse(json);
+    if(!Array.isArray(list)) throw 0;
+    const normalized = list.map(x=>({
+      nickname:String(x.nickname||"익명").slice(0,12),
+      weaponName:String(x.weaponName||"검").slice(0,18),
+      tierLabel:(["일반","특수","고급"].includes(x.tierLabel)?x.tierLabel:"일반"),
+      enhance:clamp(0, Number(x.enhance||1), 30),
+      basePower:clamp(80, Number(x.basePower||100), 140),
+      note:String(x.note||"").slice(0,24)
+    }));
+    saveFriends(normalized);
+    renderFriendsList();
+    toast("가져오기 완료!");
+  }catch{
+    toast("JSON 형식이 이상해!");
+  }
+});
+if($("resetFriends")) $("resetFriends").addEventListener("click", ()=>{
+  if(!confirm("친구를 전부 삭제할까?")) return;
+  saveFriends([]);
+  renderFriendsList();
+  toast("전체 삭제!");
+});
+
+/* UI bindings */
+$("btnCafeteria").addEventListener("click", claimCafeteria);
+$("btnDig").addEventListener("click", dig);
+$("btnPvp").addEventListener("click", simulatePvp);
+
+$("btnPve").addEventListener("click", ()=>{
+  $("pveCard").scrollIntoView({ behavior:"smooth", block:"start" });
+});
+$("btnPveHunt").addEventListener("click", ()=>{ pveHunt(1); });
+$("btnPveQuick").addEventListener("click", ()=>{ pveHunt(10); });
+if($("btnClearPveLog")) $("btnClearPveLog").addEventListener("click", ()=>{ ensurePveLog(); state.pveLog = []; renderPveLog(); saveState(); });
+$("pveStageSelect").addEventListener("change", ()=>{ renderPve(); });
+$("btnEnhance").addEventListener("click", enhanceSelected);
+$("btnSell").addEventListener("click", sellSelected);
+$("btnSwitch").addEventListener("click", ()=>{ state.selectedSlot = state.selectedSlot===0?1:0; saveState(); render(); });
+$("slot0").addEventListener("click", ()=>{ state.selectedSlot=0; saveState(); render(); });
+$("slot1").addEventListener("click", ()=>{ state.selectedSlot=1; saveState(); render(); });
+$("btnReset").addEventListener("click", ()=>{
+  if(!confirm("세이브를 초기화할까? (로컬 저장)")) return;
+  localStorage.removeItem(SAVE_KEY);
+  state = defaultState();
+  $("chatLog").innerHTML = "";
+  appendChat({ time: nowHHMM(), kind:"system", text:"세이브 초기화 완료. 다시 시작!" });
+  saveState(); render();
+});
+
+/* Render */
+function renderTop(){
+  $("gold").textContent = fmt(state.gold);
+  $("scrap").textContent = fmt(state.scrap);
+  $("pvpStat").textContent = `${state.pvp.wins}W-${state.pvp.losses}L`;
+  $("streak").textContent = state.pvp.winStreak;
+}
+function renderCafeteria(){
+  const st = cafeteriaStatus();
+  $("cafeteriaInfo").textContent = `최근24h 남은 급식 ${st.remaining}/4 · 다음까지 ${fmtMs(st.nextIn)}`;
+  $("btnCafeteria").disabled = !st.can;
+}
+function renderSlots(){
+  function setSlot(prefix, w, idx){
+    if(w) updateDisplayName(w);
+    $(prefix+"Name").textContent = w ? `[${w.tier}] ${w.displayName}` : "— 비어있음 —";
+    $(prefix+"Meta").textContent = w ? `+${w.enhance} · ${w.type} · 속성 ${w.attr} · basePower ${w.basePower}` : "발굴해서 무기를 넣어줘!";
+    const cost = w ? enhanceCost(w.enhance) : 0;
+    $(prefix+"Meta2").textContent = w ? `판매가 예상: ${fmt(Math.round(w.baseValue*(1+w.enhance*0.12)))}G · 다음 강화비용: ${fmt(cost)}G` : "—";
+    const box = $(idx===0 ? "slot0" : "slot1");
+    box.classList.toggle("active", state.selectedSlot===idx);
+  }
+  setSlot("slot0", state.inventory[0], 0);
+  setSlot("slot1", state.inventory[1], 1);
+  $("selectedSlotLabel").textContent = state.selectedSlot===0 ? "슬롯 1" : "슬롯 2";
+}
+function render(){
+  renderTop();
+  renderCafeteria();
+  renderSlots();
+  renderPve();
+  renderFriendsList();
+  saveState();
+}
+
+/* init */
+appendChat({ time: nowHHMM(), kind:"system", text:"월드 채팅이 시작되었습니다." });
+render();
+</script>
+</body>
+</html>
