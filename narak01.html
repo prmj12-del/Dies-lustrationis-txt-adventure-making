@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>나락의 구덩이 — stable</title>
+<style>
+:root{
+  /* Palette A (default) */
+  --bg:#0F1A14;
+  --panel:#1E2D24;
+  --paper:#C9B88A;
+
+  --px: 2px;
+  --pad: 10px;
+  --radius: 0px;
+  --font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+:root[data-theme="B"]{
+  --bg:#111B16;
+  --panel:#243429;
+  --paper:#D2C395;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--paper);
+  font-family:var(--font);
+  letter-spacing:0.2px;
+}
+/* retro grid layout */
+#app{
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 12px;
+}
+.frame{
+  border: var(--px) solid var(--paper);
+  padding: var(--pad);
+  background: color-mix(in srgb, var(--bg) 80%, black 20%);
+}
+.grid{
+  display:grid;
+  grid-template-columns: 1fr 320px;
+  grid-template-rows: 210px auto;
+  gap: 10px;
+}
+.panel{
+  background:var(--panel);
+  border: var(--px) solid var(--paper);
+  padding: var(--pad);
+}
+.paper{
+  background:var(--paper);
+  color:var(--bg);
+  border: var(--px) solid var(--bg);
+  padding: var(--pad);
+}
+.hdr{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:8px; margin-bottom:8px;
+}
+.hdr .title{font-weight:700}
+.small{font-size:12px; opacity:.9}
+hr.sep{border:none;border-top: var(--px) dotted var(--paper); margin:8px 0}
+/* scene */
+#sceneBox{position:relative; overflow:hidden}
+#sceneImg{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  object-fit:cover;
+  filter: grayscale(1) contrast(1.25) brightness(0.85);
+  opacity:0.55;
+  image-rendering: pixelated;
+}
+#sceneOverlay{position:relative; z-index:1}
+.badge{
+  display:inline-block;
+  border: var(--px) solid var(--paper);
+  padding:4px 8px;
+  background: color-mix(in srgb, var(--panel) 80%, black 20%);
+  margin-right:6px;
+}
+/* log + commands */
+#log{min-height: 240px; max-height: 320px; overflow:auto; white-space:pre-wrap; line-height:1.35}
+#cmds{display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; margin-top:10px}
+.btn{
+  background:var(--panel);
+  color:var(--paper);
+  border: var(--px) solid var(--paper);
+  padding:10px 10px;
+  cursor:pointer;
+  font-family:var(--font);
+}
+.btn:hover{background:var(--paper); color:var(--bg)}
+.btn:disabled{opacity:0.5; cursor:not-allowed}
+/* right menu */
+#menu{display:grid; gap:8px}
+.kv{display:grid; grid-template-columns: 1fr auto; gap:6px; font-size:13px}
+.kv b{font-weight:700}
+.pill{
+  border: var(--px) solid var(--paper);
+  padding:2px 6px;
+  display:inline-block;
+}
+/* modal */
+#modalShade{
+  position:fixed; inset:0; background:rgba(0,0,0,0.6);
+  display:none; align-items:center; justify-content:center;
+  padding: 20px;
+}
+#modal{width:min(720px, 96vw)}
+.table{
+  width:100%;
+  border-collapse:collapse;
+}
+.table td,.table th{border: var(--px) solid var(--bg); padding:6px}
+.table th{background: color-mix(in srgb, var(--paper) 85%, white 15%)}
+.note{opacity:0.9; font-size:12px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="frame">
+    <div class="hdr">
+      <div>
+        <span class="title">나락의 구덩이</span>
+        <span class="small">stable · rebuild 20260323_014749</span>
+      </div>
+      <div>
+        <button class="btn" id="themeBtn" style="padding:6px 10px">Theme A/B</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Scene -->
+      <div class="panel" id="sceneBox">
+        <img id="sceneImg" alt="" />
+        <div id="sceneOverlay">
+          <div class="hdr">
+            <div class="title" id="sceneTitle">프롤로그</div>
+            <div class="small" id="sceneTime">—</div>
+          </div>
+          <div>
+            <span class="badge" id="badgeRegion">REGION: —</span>
+            <span class="badge" id="badgeDay">DAY: 0/13</span>
+            <span class="badge" id="badgeRelic">RELIC: 0/4</span>
+          </div>
+          <hr class="sep"/>
+          <div class="small">
+            배경은 흑백 1비트 스타일을 목표로 합니다. (이미지 연결은 나중에 교체)
+          </div>
+        </div>
+      </div>
+
+      <!-- Status + Menu -->
+      <div class="panel">
+        <div class="hdr">
+          <div class="title">상태</div>
+          <div class="small"><span class="pill" id="seedTag">seed: —</span></div>
+        </div>
+        <div class="kv"><span>체력(HP)</span><b id="st_hp">10</b></div>
+        <div class="kv"><span>정신(SAN)</span><b id="st_san">10</b></div>
+        <div class="kv"><span>민첩(AGI)</span><b id="st_agi">5</b></div>
+        <div class="kv"><span>영력(SP)</span><b id="st_sp">5</b></div>
+        <div class="kv"><span>소지금(₩)</span><b id="st_money">40</b></div>
+        <hr class="sep"/>
+        <div class="title small">메뉴</div>
+        <div id="menu">
+          <button class="btn" id="btnNew">NEW</button>
+          <button class="btn" id="btnSave">SAVE</button>
+          <button class="btn" id="btnLoad">LOAD</button>
+          <button class="btn" id="btnUndo">학생증 되돌리기</button>
+          <button class="btn" id="btnStore">편의점</button>
+          <button class="btn" id="btnMap">지역선택</button>
+        </div>
+        <div class="note" style="margin-top:8px">
+          ※ HP≤0 또는 SAN≤0이면 게임오버.
+        </div>
+      </div>
+
+      <!-- Log + Commands -->
+      <div class="paper" style="grid-column: 1 / 2;">
+        <div class="hdr">
+          <div class="title">로그</div>
+          <div class="small" id="logHint">—</div>
+        </div>
+        <div id="log"></div>
+        <div id="cmds"></div>
+      </div>
+
+      <!-- Right bottom: quick info -->
+      <div class="panel" style="grid-column: 2 / 3;">
+        <div class="hdr">
+          <div class="title">플래그</div>
+          <div class="small">디버그</div>
+        </div>
+        <div class="small" id="flagsBox" style="white-space:pre-wrap"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modalShade">
+  <div id="modal" class="paper">
+    <div class="hdr">
+      <div class="title" id="modalTitle">—</div>
+      <button class="btn" id="modalClose" style="padding:6px 10px">닫기</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ========= Embedded content (editable) ========= */
+const EMBED = {
+  prologue: `
+[SCENE PROLOGUE]
+당신은 어젯밤의 비명을 기억하지 못한다.
+다만 손등에 찍힌 13개의 표식이 ‘하루에 하나씩’ 줄어든다는 것만은 확실하다.
+
+도시 어딘가에 4개의 ‘영적 힘이 담긴 물건’이 흩어져 있다.
+부둣가 / 폐허 도심 / 거대한 숲 / 인형의 섬
+
+13일 안에 4개를 모으지 못하면—당신은 ‘나락’으로 떨어진다.
+`,
+  dock_intro: `
+[SCENE DOCK_INTRO]
+바닷바람이 눅진하게 옷을 적신다. 컨테이너 사이로 끈적한 기름 냄새가 난다.
+부둣가는 늘 사람 소리보다 금속 소리가 먼저다.
+`,
+  // Minimal event pool for dock (placeholder; replace with your real events later)
+  dock_events: [
+    {
+      id:"DOCK_01_TAR",
+      title:"타르 냄새가 묻은 발자국",
+      rarity:3,
+      time:["night","late"],
+      intro:"방파제 끝, 젖은 콘크리트 위에 검은 발자국이 찍혀 있다.",
+      choices:[
+        {
+          text:"가까이 다가가 살핀다",
+          check:{stat:"agi", dc:6},
+          ok:{text:"발자국은 컨테이너 그늘로 이어진다. 이상한 단서가 떠오른다.", gain:{clues:["DOCK_ROUTE"]}},
+          fail:{text:"미끄러져 손목을 삐끗했다.", delta:{hp:-2}}
+        },
+        {
+          text:"모른 척 지나친다",
+          ok:{text:"기분 나쁜 예감만 남는다.", delta:{san:-1}}
+        }
+      ]
+    },
+    {
+      id:"DOCK_02_HOOK",
+      title:"낚싯바늘과 붉은 실",
+      rarity:2,
+      time:["day","night"],
+      intro:"녹슨 낚싯바늘에 붉은 실이 묶여 있다. 누군가 일부러 남긴 것처럼.",
+      choices:[
+        {
+          text:"실을 끊어낸다",
+          check:{stat:"sp", dc:6},
+          ok:{text:"실이 스르륵 풀리며 손끝이 따뜻해진다.", delta:{san:+1}},
+          fail:{text:"손가락이 베였다. 피가 멈추지 않는다.", delta:{hp:-1, san:-1}}
+        },
+        {
+          text:"가방에 챙긴다",
+          ok:{text:"불길하지만 유용할지도.", gain:{items:["red_thread"]}}
+        }
+      ]
+    }
+  ],
+  // Boss placeholder for Dock Day3 Late
+  dock_boss: {
+    id:"DOCK_BOSS",
+    title:"부둣가의 ‘빈 통’",
+    intro:"심야. 컨테이너 하나가 스스로 울린다. 안은 텅 비었는데—메아리만 가득하다.",
+    choices:[
+      {
+        text:"문을 열어 확인한다",
+        check:{stat:"san", dc:7},
+        ok:{text:"텅 빈 통 속에서 ‘영적 물건’이 굴러나온다.", win:true},
+        fail:{text:"공포가 목을 죈다. 정신이 갈라진다.", delta:{san:-3}}
+      },
+      {
+        text:"주변에 소금을 뿌린다",
+        check:{stat:"sp", dc:6},
+        ok:{text:"울림이 잠잠해진다. 통 안쪽에서 무언가 떨어진다.", win:true},
+        fail:{text:"소금이 검게 젖어버린다.", delta:{sp:-1, san:-1}}
+      },
+      {
+        text:"도망친다",
+        ok:{text:"당장은 살아남았다. 하지만 표식은 줄어든다.", delta:{san:-1}}
+      }
+    ],
+    reward:{relic:"DOCK_RELIC", relicName:"녹슨 항해종(航海鐘) 조각", money:+15}
+  }
+};
+/* ========= Utilities ========= */
+const $ = (s)=>document.querySelector(s);
+const logEl = $("#log");
+const cmdsEl = $("#cmds");
+const flagsEl = $("#flagsBox");
+
+function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function showModal(title, html){
+  $("#modalTitle").textContent = title;
+  $("#modalBody").innerHTML = html;
+  $("#modalShade").style.display = "flex";
+}
+$("#modalClose").onclick = ()=> $("#modalShade").style.display="none";
+$("#modalShade").addEventListener("click",(e)=>{ if(e.target.id==="modalShade") $("#modalShade").style.display="none"; });
+
+/* ========= RNG (seeded) ========= */
+function xmur3(str){
+  for(var i = 0, h = 1779033703 ^ str.length; i < str.length; i++)
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353), h = h << 13 | h >>> 19;
+  return function(){
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    return (h ^= h >>> 16) >>> 0;
+  }
+}
+function sfc32(a, b, c, d){
+  return function(){
+    a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
+    var t = (a + b) | 0;
+    a = b ^ b >>> 9;
+    b = c + (c << 3) | 0;
+    c = (c << 21 | c >>> 11);
+    d = d + 1 | 0;
+    t = t + d | 0;
+    c = c + t | 0;
+    return (t >>> 0) / 4294967296;
+  }
+}
+function makeRng(seedStr){
+  const seed = xmur3(seedStr);
+  return sfc32(seed(), seed(), seed(), seed());
+}
+
+/* ========= Game State ========= */
+const STORAGE_KEY = "narak_stable_save";
+let rng = makeRng("narak");
+let state = null;
+
+function newGame(){
+  const seedStr = "narak-" + Date.now();
+  rng = makeRng(seedStr);
+  state = {
+    seed: seedStr,
+    day: 0,
+    marksLeft: 13,
+    region: "prologue",
+    time: "—",
+    stats: {hp:10, san:10, agi:5, sp:5, money:40},
+    flags: {
+      relics: {},
+      clues: [],
+      items: [],
+      traits: [],
+      dockCleared: false,
+      undoUsedByRegion: {}
+    },
+    history: {
+      visitedEventIdsByRegion: {}
+    },
+    snapshot: null
+  };
+  writeLog("");
+  scene("프롤로그", "—", "—");
+  pushText(EMBED.prologue.trim());
+  setChoices([
+    {label:"시작한다", onpick: ()=> gotoMap()}
+  ]);
+  render();
+}
+
+function saveGame(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  toast("저장 완료");
+}
+function loadGame(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw) return toast("저장 데이터가 없습니다");
+  state = JSON.parse(raw);
+  rng = makeRng(state.seed || "narak");
+  toast("불러오기 완료");
+  render();
+}
+function toast(msg){
+  $("#logHint").textContent = msg;
+  setTimeout(()=>{ if($("#logHint").textContent===msg) $("#logHint").textContent="—"; }, 1200);
+}
+
+function snapshotSave(){
+  state.snapshot = JSON.parse(JSON.stringify(state));
+}
+function snapshotUndo(){
+  const r = state.region || "unknown";
+  if(state.flags.undoUsedByRegion[r]) return toast("이 지역에서 학생증은 이미 사용했습니다");
+  if(!state.snapshot) return toast("되돌릴 스냅샷이 없습니다");
+  state.flags.undoUsedByRegion[r] = true;
+  state = JSON.parse(JSON.stringify(state.snapshot));
+  toast("학생증 사용: 1회 되돌림");
+  render();
+}
+
+function render(){
+  $("#seedTag").textContent = "seed: " + (state?.seed?.slice(-6) || "—");
+  $("#st_hp").textContent = state.stats.hp;
+  $("#st_san").textContent = state.stats.san;
+  $("#st_agi").textContent = state.stats.agi;
+  $("#st_sp").textContent = state.stats.sp;
+  $("#st_money").textContent = state.stats.money;
+
+  $("#badgeRegion").textContent = "REGION: " + (state.region || "—");
+  $("#badgeDay").textContent = "DAY: " + state.day + "/13";
+  const relicCount = Object.keys(state.flags.relics||{}).length;
+  $("#badgeRelic").textContent = "RELIC: " + relicCount + "/4";
+
+  // flags debug
+  const flags = {
+    region: state.region,
+    time: state.time,
+    marksLeft: state.marksLeft,
+    relics: state.flags.relics,
+    clues: state.flags.clues,
+    items: state.flags.items,
+    traits: state.flags.traits,
+    visited: state.history.visitedEventIdsByRegion
+  };
+  flagsEl.textContent = JSON.stringify(flags, null, 2);
+
+  // gameover check
+  if(state.stats.hp <= 0 || state.stats.san <= 0){
+    setChoices([
+      {label:"게임오버 — NEW", onpick: ()=> newGame()}
+    ]);
+    pushText("\n\n[GAME OVER]\n당신은 더 이상 버티지 못했다.");
+  }
+}
+
+function scene(title, region, timeStr){
+  $("#sceneTitle").textContent = title;
+  $("#sceneTime").textContent = timeStr;
+  state.region = region;
+  state.time = timeStr;
+  // placeholder image (blank)
+  $("#sceneImg").src = "";
+}
+
+function writeLog(txt){ logEl.textContent = txt; }
+function pushText(txt){ logEl.textContent += (logEl.textContent ? "\n\n" : "") + txt; logEl.scrollTop = logEl.scrollHeight; }
+
+function setChoices(arr){
+  cmdsEl.innerHTML = "";
+  for(const c of arr){
+    const b = document.createElement("button");
+    b.className = "btn";
+    b.textContent = c.label;
+    b.onclick = ()=>{ snapshotSave(); c.onpick(); render(); };
+    cmdsEl.appendChild(b);
+  }
+}
+
+function addMoney(n){ state.stats.money = Math.max(0, state.stats.money + n); }
+function applyDelta(delta){
+  if(!delta) return;
+  for(const k of Object.keys(delta)){
+    if(state.stats[k] === undefined) continue;
+    state.stats[k] = state.stats[k] + delta[k];
+  }
+  state.stats.hp = clamp(state.stats.hp, -999, 99);
+  state.stats.san = clamp(state.stats.san, -999, 99);
+}
+
+function ensureVisited(region){
+  if(!state.history.visitedEventIdsByRegion[region]) state.history.visitedEventIdsByRegion[region] = [];
+  return state.history.visitedEventIdsByRegion[region];
+}
+
+function rollCheck(stat, dc){
+  const base = state.stats[stat] ?? 0;
+  const r = Math.floor(rng()*10)+1; // 1..10
+  return {total: base + r, r, base, dc, pass: (base + r) >= dc};
+}
+
+/* ========= Flow ========= */
+function gotoMap(){
+  scene("지역 선택", "map", "—");
+  const relicCount = Object.keys(state.flags.relics||{}).length;
+  pushText("[MAP]\n어디로 갈까? (현재 수집: " + relicCount + "/4, 남은 표식: " + state.marksLeft + ")");
+  setChoices([
+    {label:"부둣가", onpick: ()=> enterDock() },
+    {label:"(임시) 폐허 도심", onpick: ()=> toast("아직 미구현") },
+    {label:"(임시) 거대한 숲", onpick: ()=> toast("아직 미구현") },
+    {label:"(임시) 인형의 섬", onpick: ()=> toast("아직 미구현") },
+  ]);
+}
+
+function advanceDay(){
+  state.day += 1;
+  state.marksLeft = Math.max(0, state.marksLeft - 1);
+}
+
+function enterDock(){
+  state.region = "dock";
+  pushText(EMBED.dock_intro.trim());
+  dockDayLoop(1);
+}
+
+function dockDayLoop(dayIndex){
+  // dayIndex: 1..3
+  if(dayIndex===1){ state.time="day"; }
+  if(dayIndex===2){ state.time="night"; }
+  if(dayIndex===3){ state.time="late"; }
+
+  scene("부둣가", "dock", (dayIndex===1?"낮":dayIndex===2?"밤":"심야") + " · DAY " + (state.day+1));
+
+  if(dayIndex < 3){
+    advanceDay();
+    // draw an event not visited
+    const visited = ensureVisited("dock");
+    const pool = EMBED.dock_events.filter(e=> !visited.includes(e.id));
+    const evt = pool.length ? pool[Math.floor(rng()*pool.length)] : EMBED.dock_events[Math.floor(rng()*EMBED.dock_events.length)];
+    visited.push(evt.id);
+
+    pushText("\n[EVENT] " + evt.title + "\n" + evt.intro);
+    setChoices(evt.choices.map(ch=>({
+      label: ch.text,
+      onpick: ()=> handleChoice(evt, ch, ()=> dockDayLoop(dayIndex+1))
+    })));
+  } else {
+    // day3: store then boss
+    advanceDay();
+    pushText("\n[3일차 밤 — 심야의 편의점]\n버티기 위한 최소한의 보급.");
+    setChoices([
+      {label:"편의점 들르기", onpick: ()=> openStore(()=> openDockBoss())},
+      {label:"그냥 간다", onpick: ()=> openDockBoss()}
+    ]);
+  }
+}
+
+function handleChoice(evt, ch, next){
+  if(ch.check){
+    const res = rollCheck(ch.check.stat, ch.check.dc);
+    pushText("\n[판정] " + ch.check.stat.toUpperCase() + " " + res.base + " + " + res.r + " = " + res.total + " / DC " + res.dc + (res.pass ? " (성공)" : " (실패)"));
+    if(res.pass){
+      if(ch.ok?.text) pushText(ch.ok.text);
+      if(ch.ok?.gain?.clues) state.flags.clues.push(...ch.ok.gain.clues);
+      if(ch.ok?.gain?.items) state.flags.items.push(...ch.ok.gain.items);
+      applyDelta(ch.ok?.delta);
+    } else {
+      if(ch.fail?.text) pushText(ch.fail.text);
+      applyDelta(ch.fail?.delta);
+    }
+  } else {
+    if(ch.ok?.text) pushText(ch.ok.text);
+    applyDelta(ch.ok?.delta);
+    if(ch.ok?.gain?.clues) state.flags.clues.push(...ch.ok.gain.clues);
+    if(ch.ok?.gain?.items) state.flags.items.push(...ch.ok.gain.items);
+  }
+  next();
+}
+
+function openDockBoss(){
+  const b = EMBED.dock_boss;
+  pushText("\n[BOSS] " + b.title + "\n" + b.intro);
+  setChoices(b.choices.map(ch=>({
+    label: ch.text,
+    onpick: ()=> {
+      if(ch.check){
+        const res = rollCheck(ch.check.stat, ch.check.dc);
+        pushText("\n[판정] " + ch.check.stat.toUpperCase() + " " + res.base + " + " + res.r + " = " + res.total + " / DC " + res.dc + (res.pass ? " (성공)" : " (실패)"));
+        if(res.pass){
+          if(ch.ok?.text) pushText(ch.ok.text);
+          if(ch.ok?.delta) applyDelta(ch.ok.delta);
+          if(ch.ok?.win) winDockBoss();
+        } else {
+          if(ch.fail?.text) pushText(ch.fail.text);
+          if(ch.fail?.delta) applyDelta(ch.fail.delta);
+        }
+      } else {
+        if(ch.ok?.text) pushText(ch.ok.text);
+        if(ch.ok?.delta) applyDelta(ch.ok.delta);
+      }
+      render();
+    }
+  })));
+}
+
+function winDockBoss(){
+  const r = EMBED.dock_boss.reward;
+  state.flags.relics[r.relic] = r.relicName;
+  addMoney(r.money || 0);
+  state.flags.dockCleared = true;
+  pushText("\n[획득] " + r.relicName + " (+₩" + (r.money||0) + ")");
+  pushText("\n부둣가의 울림이 가라앉는다. 당신은 다음 장소로 향한다.");
+  setChoices([
+    {label:"지역선택으로", onpick: ()=> gotoMap()}
+  ]);
+}
+
+async function openStore(onDone){
+  // store items are embedded from a tiny JSON blob below for now
+  const items = STORE_ITEMS;
+  const rows = items.map(it=>`
+    <tr>
+      <td><b>${it.name}</b><div class="note">${it.desc}</div></td>
+      <td style="text-align:right">₩${it.price}</td>
+      <td style="text-align:right"><button class="btn" data-buy="${it.id}" style="padding:6px 10px">구매</button></td>
+    </tr>
+  `).join("");
+  showModal("심야의 편의점", `
+    <div class="note">소지금: ₩<b id="m_money">${state.stats.money}</b></div>
+    <table class="table" style="margin-top:8px">
+      <thead><tr><th>상품</th><th style="width:90px">가격</th><th style="width:90px">구매</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="note" style="margin-top:10px">※ 구매 시 즉시 효과 적용(임시).</div>
+    <div style="margin-top:10px"><button class="btn" id="m_done">나가기</button></div>
+  `);
+  // bind
+  document.querySelectorAll("[data-buy]").forEach(btn=>{
+    btn.onclick = ()=>{
+      const id = btn.getAttribute("data-buy");
+      const it = items.find(x=>x.id===id);
+      if(!it) return;
+      if(state.stats.money < it.price) return toast("돈이 부족해");
+      addMoney(-it.price);
+      for(const k of Object.keys(it.effects||{})){
+        if(state.stats[k]!==undefined) state.stats[k] += it.effects[k];
+      }
+      state.flags.items.push("store:"+id);
+      $("#m_money").textContent = state.stats.money;
+      toast("구매: " + it.name);
+      render();
+    };
+  });
+  $("#m_done").onclick = ()=>{
+    $("#modalShade").style.display="none";
+    if(onDone) onDone();
+  };
+}
+
+$("#btnNew").onclick = ()=> newGame();
+$("#btnSave").onclick = ()=> saveGame();
+$("#btnLoad").onclick = ()=> loadGame();
+$("#btnUndo").onclick = ()=> snapshotUndo();
+$("#btnStore").onclick = ()=> openStore(()=>{ /* stay */ });
+$("#btnMap").onclick = ()=> gotoMap();
+
+$("#themeBtn").onclick = ()=>{
+  const root = document.documentElement;
+  root.dataset.theme = (root.dataset.theme === "B") ? "" : "B";
+  toast("테마: " + (root.dataset.theme==="B"?"B":"A"));
+};
+
+// Minimal embedded store items (can be replaced by importing your json later)
+const STORE_ITEMS = [{"id": "water", "name": "생수", "price": 5, "desc": "갈증을 달래고 정신을 조금 안정시킨다.", "effects": {"san": 1}}, {"id": "bandage", "name": "붕대", "price": 12, "desc": "간단한 지혈. 체력을 회복한다.", "effects": {"hp": 3}}, {"id": "energy", "name": "에너지드링크", "price": 18, "desc": "심장이 빨라진다. 민첩이 잠깐 오른 느낌.", "effects": {"san": -1, "agi": 1}}, {"id": "salt", "name": "소금봉지", "price": 25, "desc": "잡것을 멀리한다는 민간요법.", "effects": {"sp": 1}}, {"id": "cig", "name": "담배 한 갑", "price": 30, "desc": "폐가 따끔하지만 머리가 맑아진다.", "effects": {"san": 2, "hp": -1}}];
+
+// Boot
+newGame();
+</script>
+</body>
+</html>
